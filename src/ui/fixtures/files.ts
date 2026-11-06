@@ -91,6 +91,7 @@ const greet = `export function greet(name: string): string {
 }
 `;
 
+export const codeOneLine = codeFile('src/greet.ts', 'typescript', greet, greet.replace("'Hello, '", "'Hi there, '"));
 export const codeAdded = codeFile('src/greet.ts', 'typescript', '', greet);
 export const codeDeleted = codeFile('src/greet.ts', 'typescript', greet, '');
 export const codeRenamed = codeFile(

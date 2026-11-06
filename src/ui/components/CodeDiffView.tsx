@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { DiffEditor, useMonaco, type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
+import '../monaco.ts';
 import type { CodeDiff } from '../../types.ts';
 import { defineMonacoTheme, monacoThemeName, useIsDark } from '../theme.ts';
 
 const LINE_HEIGHT = 19;
 const MIN_HEIGHT = 3 * LINE_HEIGHT;
 
-// Monaco's DiffEditor, shown inline with unchanged regions folded.
+// Monaco's DiffEditor, shown inline with unchanged regions folded. A change
+// within a single line stays on one line, instead of a deleted line + an added one.
 // It mounts only once it scrolls near the screen, and sizes itself to its content.
 export function CodeDiffView({ diff }: { diff: CodeDiff }) {
   const dark = useIsDark();
@@ -40,6 +42,9 @@ export function CodeDiffView({ diff }: { diff: CodeDiff }) {
           options={{
             renderSideBySide: false,
             useInlineViewWhenSpaceIsLimited: true,
+            // A change within one line is shown on that one line, with the
+            // old text struck through next to the new text.
+            experimental: { useTrueInlineView: true },
             hideUnchangedRegions: { enabled: true, contextLineCount: 3, minimumLineCount: 3, revealLineCount: 20 },
             readOnly: true,
             domReadOnly: true,
