@@ -40,7 +40,7 @@ function useFocus(): [Record<DeltaId, Focus>, (id: DeltaId, focus: Focus) => voi
 }
 
 function DashboardPage() {
-  const [summaries, reload] = useLoad('deltas', api.deltas);
+  const [summaries, reload, busy] = useLoad('deltas', api.deltas);
   const [focus, setFocus, focusError] = useFocus();
   // Refresh when you come back to the tab, so it reflects work done elsewhere.
   useEffect(() => {
@@ -60,6 +60,8 @@ function DashboardPage() {
       <Dashboard
         summaries={summaries.value.deltas.map((s) => ({ ...s, focus: focus[s.delta.id] ?? s.focus }))}
         onFocus={setFocus}
+        onRefresh={reload}
+        refreshing={busy}
       />
     </>
   );

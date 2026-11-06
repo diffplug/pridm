@@ -10,7 +10,9 @@ feat/inline-md-diffs  ·  github.com/diffplug/pridm#42  ·  2 uncommitted
 ▸ other   1 file      +1   −1
 ```
 
-Expanding a category lists every one of its files, each collapsed to a single row with its path and +/−. Expanding a file shows its diff, and any number of files can be open at once. See [Diffs](../architecture/diffs.md) for how each kind of file is shown.
+Expanding a category lists every one of its files, each collapsed to a single row with its path and +/−. Expanding a file shows its diff, and any number of files can be open at once. A diff shows only what changed, with a little context; expandos show more, up or down, or everything. See [Diffs](../architecture/diffs.md).
+
+The delta's header has no overall total: each category shows its own, in words for markdown and lines for code, and one number couldn't be both. See [Diffs](../architecture/diffs.md) for how each kind of file is shown.
 
 ## What loads when
 
@@ -30,6 +32,8 @@ Markdown files are counted in **words**, shown as `+105w −686w`, because they'
 - The sections are in the order the origin's categories are written in `categories.json`, with `other` last. Categories with no changed files are left out.
 
 ## Dashboard
+
+The dashboard says how many deltas there are, and has a **Refresh** button, which looks through your checkouts and PRs again. It also refreshes on its own when the tab gets focus.
 
 One row per delta, sorted by: pinned first, then most recently updated, then PRs that can't be opened. Muted deltas go to the bottom, dimmed. (Deltas with a surface that needs attention will come right after pinned ones, once surfaces are built.) Each row shows:
 

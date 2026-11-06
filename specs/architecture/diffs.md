@@ -5,7 +5,8 @@ For every file, the server sends both full versions: `original` and `modified`. 
 ## Code: Monaco `DiffEditor`
 
 - Inline view: `renderSideBySide: false`.
-- Unchanged regions folded: `hideUnchangedRegions: { enabled: true }`.
+- Unchanged regions folded: `hideUnchangedRegions` with 3 lines of context. Each fold bar is an expando: its ▼ (at the top, in the line-number gutter) shows 20 more lines below the code above it, its ▲ (at the bottom) 20 more above the code below it, and clicking "N hidden lines" shows them all. Monaco draws these handles invisibly; `theme.css` makes them visible.
+- An added or deleted file isn't diffed against an empty file, which would mark the empty side's line 1 as changed. It's shown as the file itself, every line green or red.
 - Read-only.
 - Monaco computes the diff itself, which is why the server sends full versions, not hunks.
 - The language comes from the file extension.
@@ -36,6 +37,10 @@ Marking blocks one at a time keeps the marks from breaking markdown syntax, e.g.
 Within a block, words are whitespace-separated chunks, so every mark starts and ends next to whitespace, which keeps it valid markdown (`~~ word~~` would not be). A changed region grows into its neighbors until it's balanced on both sides, so a mark never splits `**bold**`, `` `code` ``, or `[link](url)`: changing a link's URL marks the whole link. If more than half the words changed, the block is shown as deleted + inserted instead.
 
 This lives in `src/shared/mdmerge.ts`. It's a pure function, so it has unit tests, and Storybook can call it on fixtures directly.
+
+### Folding unchanged blocks
+
+`mergePieces` returns the merged document as a list of blocks, each marked changed or not, and `joinPieces` turns any contiguous run of them back into markdown. `src/shared/fold.ts` decides what shows: changed blocks, plus one unchanged block of context on each side. Each run of unchanged blocks between them is folded, unless it's a single block. Each shown part is its own read-only MDXEditor, and each folded run is an `ExpandBar` that works like Monaco's fold bar: ↓ shows 5 more blocks below the part above, ↑ shows 5 more above the part below, and the middle shows all of them. A folded run's bar names the headings inside it, or else the section it's in, e.g. "14 hidden blocks · Owner-managed capture setup, Migration upgrade history, …".
 
 Every markdown file has a **Rendered / Source** toggle. Source shows the plain markdown diff in Monaco.
 

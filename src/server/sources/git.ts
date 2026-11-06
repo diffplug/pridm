@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import type { CategoryGlobs, FileChange, FileStat, FileStatus, WordCounts } from '../../types.ts';
 import { classifier } from '../../shared/classify.ts';
 import { isMarkdown, languageOf } from '../../shared/language.ts';
-import { mergeMarkdown } from '../../shared/mdmerge.ts';
+import { joinPieces, mergePieces } from '../../shared/mdmerge.ts';
 import { words } from '../../shared/words.ts';
 import { git } from '../exec.ts';
 
@@ -82,7 +82,8 @@ async function contents(range: Range, stat: FileStat): Promise<{ original: strin
 export async function fileChange(range: Range, stat: FileStat): Promise<FileChange> {
   const { original, modified } = await contents(range, stat);
   if (isMarkdown(stat.path)) {
-    return { ...stat, diff: { kind: 'markdown', original, modified, merged: mergeMarkdown(original, modified) } };
+    const pieces = mergePieces(original, modified);
+    return { ...stat, diff: { kind: 'markdown', original, modified, merged: joinPieces(pieces), pieces } };
   }
   return { ...stat, diff: { kind: 'code', language: languageOf(stat.path), original, modified } };
 }

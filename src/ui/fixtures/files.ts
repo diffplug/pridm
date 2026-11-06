@@ -3,11 +3,13 @@
 
 import { diffLines } from 'diff';
 import type { FileChange, FileStatus } from '../../types.ts';
-import { mergeMarkdown } from '../../shared/mdmerge.ts';
+import { joinPieces, mergePieces } from '../../shared/mdmerge.ts';
 import { wordCounts } from '../../shared/words.ts';
 import designBefore from './real/design.before.md?raw';
 import designAfter from './real/design.after.md?raw';
 import typesBefore from './real/types.before.ts.txt?raw';
+import discoveryBefore from './real/discovery.before.md?raw';
+import discoveryAfter from './real/discovery.after.md?raw';
 import typesAfter from './real/types.after.ts.txt?raw';
 
 interface Options {
@@ -43,7 +45,7 @@ export function markdownFile(path: string, original: string, modified: string, o
   return {
     ...base(path, original, modified, o),
     words: wordCounts(original, modified),
-    diff: { kind: 'markdown', original, modified, merged: mergeMarkdown(original, modified) },
+    diff: { kind: 'markdown', original, modified, merged: joinPieces(mergePieces(original, modified)), pieces: mergePieces(original, modified) },
   };
 }
 
@@ -83,6 +85,9 @@ export const markdownCases = {
 } satisfies Record<string, [string, string]>;
 
 export const realSpec = markdownFile('specs/ui/design.md', designBefore, designAfter);
+
+// A long spec with two small edits far apart, so most of it folds away.
+export const longSpec = markdownFile('specs/architecture/discovery.md', discoveryBefore, discoveryAfter);
 
 // ─── Code ────────────────────────────────────────────────────
 
