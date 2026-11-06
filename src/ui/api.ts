@@ -1,7 +1,7 @@
 // Fetches from the server's /api routes. See src/server/api.ts.
 
 import { useEffect, useState } from 'react';
-import type { Category, CategoryDiff, DeltaId, DeltaOverview, DeltaSummary } from '../types.ts';
+import type { Category, CategoryDiff, DeltaId, DeltaList, DeltaOverview } from '../types.ts';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`/api/${path}`);
@@ -13,7 +13,7 @@ async function get<T>(path: string): Promise<T> {
 const id = (deltaId: DeltaId) => encodeURIComponent(deltaId);
 
 export const api = {
-  deltas: () => get<DeltaSummary[]>('deltas'),
+  deltas: () => get<DeltaList>('deltas'),
   overview: (deltaId: DeltaId) => get<DeltaOverview>(`deltas/${id(deltaId)}`),
   diff: (deltaId: DeltaId, category: Category) => get<CategoryDiff>(`deltas/${id(deltaId)}/${encodeURIComponent(category)}`),
 };

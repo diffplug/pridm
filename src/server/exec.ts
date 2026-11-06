@@ -21,11 +21,14 @@ async function slot<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+// Never wait on a password prompt: a fetch that needs one fails instead of hanging.
+const ENV = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'ssh -o BatchMode=yes' };
+
 export function run(command: string, args: string[], cwd: string): Promise<string> {
   return slot(
     () =>
       new Promise((resolve, reject) => {
-        execFile(command, args, { cwd, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 }, (err, stdout, stderr) => {
+        execFile(command, args, { cwd, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024, env: ENV, timeout: 120_000 }, (err, stdout, stderr) => {
           if (err) reject(Object.assign(err, { stderr }));
           else resolve(stdout);
         });

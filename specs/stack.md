@@ -32,7 +32,8 @@ src/
     exec.ts                run git / gh / dor, in parallel with a limit
     origin.ts              normalize remote URLs into RepoKeys (tested)
     config.ts              read ~/.pridm/categories.json and state.json
-    discover.ts            local checkouts → BulkDelta[] (PRs: not yet)
+    prs.ts                 your open PRs, from one GitHub GraphQL query
+    discover.ts            checkouts + PRs → BulkDelta[], and the join (tested)
     surfaces.ts            dor list → SurfaceRef[] per delta (not yet)
     sources/
       git.ts               file list and contents from a local clone
@@ -56,7 +57,7 @@ test/
 
 | Route | Returns |
 | --- | --- |
-| `GET /api/deltas` | `DeltaSummary[]` |
+| `GET /api/deltas` | `DeltaList`: `DeltaSummary[]` plus warnings |
 | `GET /api/deltas/:id` | `DeltaOverview` |
 | `GET /api/deltas/:id/:category` | `CategoryDiff` |
 | `PUT /api/focus/:id` | sets `pinned`, `normal`, or `muted` (not built yet) |

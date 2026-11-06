@@ -23,6 +23,7 @@ Everything up to the Claude session works today. The Dormouse surfaces are the l
 | 1. Diff viewers | Merged markdown with `~~`/`==` marks (`mdmerge.ts`); Monaco inline diffs, one-line changes on one line; Primer colors in light and dark | `main` |
 | 2. Delta view | Collapsed categories with totals; each file expands on its own; heading-with-rule headers; sticky headers; markdown counted in words (`+105w −686w`) | `main` |
 | 3–4. Live local deltas | Discovery of every checkout under `~/projects` (20 deltas from 69 folders in ~2 s); the `/api` routes; the dashboard; open categories in the URL | `main`, [PR #1](https://github.com/diffplug/pridm/pull/1) |
+| Next 1. Your open PRs | One GraphQL query; PRs joined to checkouts (forks too), compared with their real base (stacked PRs too); PR-only deltas fetched into a clone; unavailable PRs link to GitHub | `feat/open-prs` |
 
 ## Next
 

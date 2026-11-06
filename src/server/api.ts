@@ -1,46 +1,82 @@
 // The /api routes, served by Vite's dev server. See specs/stack.md#api.
 //
-//   GET /api/deltas                  DeltaSummary[]
+//   GET /api/deltas                  DeltaList
 //   GET /api/deltas/:id              DeltaOverview
 //   GET /api/deltas/:id/:category    CategoryDiff
 //
 // Ids contain "/" and ":", so they're URL-encoded. The server is long-lived:
-// it remembers the last discovery so a delta can be looked up by id, but every
+// it remembers how to re-read each delta from the last listing, but every
 // request reads git fresh, so what you see is always the current state.
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';
-import type { CategoryDiff, DeltaId, DeltaOverview, DeltaSummary } from '../types.ts';
+import type { CategoryDiff, DeltaId, DeltaList, DeltaOverview, DeltaSummary } from '../types.ts';
 import { sectionOrder } from '../shared/classify.ts';
 import { buildOverview, categoryDiff, categoryStats } from '../shared/overview.ts';
 import { categoryConfig, state } from './config.ts';
-import { discoverLocal, localDelta, type LocalDelta } from './discover.ts';
+import { inspect, localDelta, plan, prOnlyDelta, scan, unavailableDelta, type LocalDelta } from './discover.ts';
+import { openPrs, type OpenPr } from './prs.ts';
 import { fileChange, fileStats } from './sources/git.ts';
 
-let known = new Map<DeltaId, LocalDelta>();
+// How to re-read each delta from the last listing.
+let readers = new Map<DeltaId, () => Promise<LocalDelta | string | null>>();
 
-async function deltas(): Promise<DeltaSummary[]> {
+async function deltas(): Promise<DeltaList> {
   const s = state();
-  const found = await discoverLocal(s.scanRoots, categoryConfig());
-  known = new Map(found.map((d) => [d.delta.id, d]));
-  return found
-    .map((d) => ({
-      delta: d.delta,
-      focus: s.focus[d.delta.id] ?? 'normal',
-      categories: categoryStats(d.stats, sectionOrder(d.globs)),
-    }))
-    .sort((a, b) => (b.delta.local?.updatedAt ?? '').localeCompare(a.delta.local?.updatedAt ?? ''));
+  const config = categoryConfig();
+  const warnings: string[] = [];
+  const [checkouts, prs] = await Promise.all([
+    scan(s.scanRoots),
+    openPrs().catch((e: Error & { stderr?: string }): OpenPr[] => {
+      warnings.push(`Couldn't load your PRs, so only local checkouts are shown: ${(e.stderr || e.message).trim()}`);
+      return [];
+    }),
+  ]);
+
+  const next = new Map<DeltaId, () => Promise<LocalDelta | string | null>>();
+  const results = await Promise.all(
+    plan(checkouts, prs).map(async (p): Promise<DeltaSummary | null> => {
+      if (p.kind === 'unavailable') {
+        return { delta: unavailableDelta(p.pr), focus: 'normal', categories: [], unavailable: p.reason };
+      }
+      // The listing reuses the checkout it just scanned; later re-reads inspect it again.
+      let scanned: typeof p | null = p;
+      const read =
+        p.kind === 'local'
+          ? async () => {
+              const co = scanned?.kind === 'local' ? scanned.checkout : await inspect(p.checkout.top);
+              scanned = null;
+              return localDelta(co, config, p.pr);
+            }
+          : () => prOnlyDelta(p.pr, p.clone, config);
+      const d = await read().catch((e: Error) => e.message);
+      if (d === null) return null;
+      if (typeof d === 'string') {
+        const pr = p.kind === 'pr' ? p.pr : p.pr!;
+        return { delta: unavailableDelta(pr), focus: 'normal', categories: [], unavailable: d };
+      }
+      next.set(d.delta.id, read);
+      return { delta: d.delta, focus: s.focus[d.delta.id] ?? 'normal', categories: categoryStats(d.stats, sectionOrder(d.globs)) };
+    }),
+  );
+  readers = next;
+
+  const updated = (d: DeltaSummary) => [d.delta.local?.updatedAt ?? '', d.delta.pr?.updatedAt ?? ''].sort().pop()!;
+  const list = results.filter((d): d is DeltaSummary => d !== null);
+  // Openable deltas first, newest first; then the ones that can't be opened.
+  list.sort((a, b) => Number(!!a.unavailable) - Number(!!b.unavailable) || updated(b).localeCompare(updated(a)));
+  return { deltas: list, warnings };
 }
 
-// Re-reads one delta, so it reflects edits made since the last discovery.
+// Re-reads one delta, so it reflects edits made since the last listing.
 async function fresh(id: DeltaId): Promise<LocalDelta> {
-  if (!known.has(id)) await deltas();
-  const d = known.get(id);
-  if (!d) throw new HttpError(404, `No delta ${id}`);
-  const again = await localDelta(d.range.cwd, categoryConfig());
-  if (!again || again.delta.id !== id) throw new HttpError(404, `${id} has no changes any more`);
-  known.set(id, again);
-  return again;
+  if (!readers.has(id)) await deltas();
+  const read = readers.get(id);
+  if (!read) throw new HttpError(404, `No delta ${id}`);
+  const d = await read();
+  if (d === null) throw new HttpError(404, `${id} has no changes any more`);
+  if (typeof d === 'string') throw new HttpError(503, d);
+  return d;
 }
 
 async function overview(id: DeltaId): Promise<DeltaOverview> {

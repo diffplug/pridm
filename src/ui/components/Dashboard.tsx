@@ -2,7 +2,8 @@ import type { DeltaSummary } from '../../types.ts';
 import { routeHash } from '../route.ts';
 import { DeltaRow } from './DeltaRow.tsx';
 
-// Every delta, newest first, with muted ones at the bottom.
+// Every delta, in the server's order (newest first, PRs that can't be opened
+// last), with pinned ones at the top and muted ones at the bottom.
 export function Dashboard({ summaries }: { summaries: DeltaSummary[] }) {
   if (summaries.length === 0) {
     return <p className="pridm-muted">No changes in any checkout under your scan folders.</p>;
