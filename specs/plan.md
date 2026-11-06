@@ -6,7 +6,7 @@ Started 2026-11-05 as a 2-hour hackathon. Updated 2026-11-05 after phase 4.
 
 pridm's dashboard lists every change in progress across `~/projects`. One opens, split into collapsed categories, each with +/− counts. Expanding **spec** shows a rendered markdown diff with changes marked inline. Expanding **prod** shows an inline Monaco diff. The dashboard shows the Claude session working in that worktree, and puts it at the top when it's waiting on you.
 
-Everything up to the Claude session works today. The Dormouse surfaces are the last branch below.
+Everything up to the Claude session works today. Showing the Claude session is on hold; see [On hold](#on-hold).
 
 ## How we work
 
@@ -24,13 +24,14 @@ Everything up to the Claude session works today. The Dormouse surfaces are the l
 | 2. Delta view | Collapsed categories with totals; each file expands on its own; heading-with-rule headers; sticky headers; markdown counted in words (`+105w −686w`) | `main` |
 | 3–4. Live local deltas | Discovery of every checkout under `~/projects` (20 deltas from 69 folders in ~2 s); the `/api` routes; the dashboard; open categories in the URL | `main`, [PR #1](https://github.com/diffplug/pridm/pull/1) |
 | Next 1. Your open PRs | One GraphQL query; PRs joined to checkouts (forks too), compared with their real base (stacked PRs too); PR-only deltas fetched into a clone; unavailable PRs link to GitHub | `main`, [PR #2](https://github.com/diffplug/pridm/pull/2) |
-| Next 2. Pin and mute | `PUT /api/focus/:id`, saved in `~/.pridm/state.json`; buttons on rows and in the delta header; optimistic, undone on failure. Also fixed: a file header outside a category covered its first line | `feat/focus` |
+| Next 2. Pin and mute | `PUT /api/focus/:id`, saved in `~/.pridm/state.json`; buttons on rows and in the delta header; optimistic, undone on failure. Also fixed: a file header outside a category covered its first line | `main`, [PR #4](https://github.com/diffplug/pridm/pull/4) |
+| Next 3. Polish | Expandos for code and markdown; added and deleted files shown whole; no header total; a Refresh button | `fix/polish` |
 
 ## Next
 
 In order. Each is one branch and one PR, and leaves the app working.
 
-### 1. Your open PRs (`feat/open-prs`, ~30 min)
+### 1. Your open PRs (done)
 
 See [Discovery](architecture/discovery.md#2-your-open-prs-not-built-yet).
 
@@ -41,22 +42,27 @@ See [Discovery](architecture/discovery.md#2-your-open-prs-not-built-yet).
 - The PR number and state show on rows and in the delta header.
 - Tests: the join, PR-only ranges. Stories: the PR states (open, draft, merged).
 
-### 2. Pin and mute (`feat/focus`, ~15 min)
+### 2. Pin and mute (done)
 
 - `PUT /api/focus/:id` writes `~/.pridm/state.json`.
 - Pin and mute buttons on each dashboard row and in the delta header.
 - Dashboard order: pinned, then most recent. Muted rows at the bottom, dimmed. (Surfaces that need attention slot in after pinned, in item 4.)
 
-### 3. Polish (`fix/polish`, ~15 min)
+### 3. Polish (done)
 
-- **Added files:** Monaco marks the empty original's line "1" in red. Show an added file as just its new contents, all green.
-- **The delta header's total** mixes markdown and code, so it's in lines while the spec section is in words. Label it "lines", or drop it.
+- **Expandos, for code and markdown.** A diff shows only the changed parts with a little context around them. Between them, a bar says how much is hidden, and expands it a step at a time, up or down, or all at once.
+  - Code: Monaco's folded unchanged regions.
+  - Markdown: the merged document is shown in chunks around the changed blocks, with one unchanged block of context on each side. A hidden run's bar names the section it's in.
+- **Added and deleted files:** Monaco marks the empty side's line "1" in red. Show an added file as just its contents, all green, and a deleted one all red.
+- **Drop the delta header's total.** It's in lines while the spec section is in words, and each category already shows its own total.
 - **Refresh button** on the dashboard, next to the auto-refresh when the tab gets focus.
 - Screenshots for the presentation.
 
-### 4. Dormouse surfaces (`feat/dormouse-surfaces`, ~20 min)
+## On hold
 
-See [Discovery](architecture/discovery.md#5-dormouse-surfaces-not-built-yet).
+### Dormouse surfaces
+
+On hold indefinitely, since 2026-11-06: `dor` doesn't yet have the primitives this needs. What it would be, for when it does. See [Discovery](architecture/discovery.md#5-dormouse-surfaces-not-built-yet).
 
 - `src/server/surfaces.ts`: run `dor list --json --all`, and match each surface to a delta. Terminals and tools match by `cwd` (longest `local.path` wins), browsers by `url` starting with the PR's URL.
 - Fill `BulkDelta.surfaces` in `/api/deltas` and `/api/deltas/:id`.
@@ -79,7 +85,6 @@ Not needed for the demo. Each is its own branch when we get to it.
 
 ## If we run short on time, cut in this order
 
-1. Dormouse surfaces.
-2. Polish, apart from the added-file fix.
-3. Pin and mute.
-4. PR-only deltas: keep the join, so PRs show on local deltas, but skip PRs that aren't checked out.
+1. Polish, apart from expandos and the added-file fix.
+2. Pin and mute.
+3. PR-only deltas: keep the join, so PRs show on local deltas, but skip PRs that aren't checked out.

@@ -167,6 +167,15 @@ interface MarkdownDiff {
   original: string;
   modified: string;
   merged: string;
+  pieces: MarkdownPiece[];   // `merged`, block by block, so unchanged runs can be hidden
+}
+
+// One block of the merged markdown. See src/shared/mdmerge.ts.
+interface MarkdownPiece {
+  text: string;
+  listItem: boolean;         // list items keep their own separators so lists stay tight
+  sep: string;               // the text before this block in its own version
+  changed: boolean;
 }
 
 // ─── Classification ──────────────────────────────────────────
@@ -203,5 +212,5 @@ export {
   type BulkDelta, type DeltaId, type RepoKey, type LocalCheckout, type PullRequest,
   type SurfaceRef, type Category, type Focus, type CategoryStat, type WordCounts, type DeltaSummary, type DeltaList,
   type DeltaOverview, type CategoryDiff, type FileStatus, type FileStat, type FileChange,
-  type CodeDiff, type MarkdownDiff, type CategoryGlobs, type CategoryConfig, type PridmState,
+  type CodeDiff, type MarkdownDiff, type MarkdownPiece, type CategoryGlobs, type CategoryConfig, type PridmState,
 };

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { DiffEditor, useMonaco, type Monaco } from '@monaco-editor/react';
+import { DiffEditor, Editor, useMonaco, type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import '../monaco.ts';
 import type { CodeDiff } from '../../types.ts';
@@ -15,6 +15,76 @@ const MIN_HEIGHT = 3 * LINE_HEIGHT;
 // It's marked `data-diff-pending` until it has measured whether it's near the screen, and, if it is,
 // until the diff is drawn with its syntax colors. Stories wait for that before a screenshot.
 export function CodeDiffView({ diff }: { diff: CodeDiff }) {
+  // An added or deleted file has nothing to compare with. As a diff, Monaco
+  // would mark the empty side's line 1 as changed, so show the file itself.
+  if (diff.original === '' && diff.modified !== '') return <WholeFileView text={diff.modified} language={diff.language} side="added" />;
+  if (diff.modified === '' && diff.original !== '') return <WholeFileView text={diff.original} language={diff.language} side="deleted" />;
+  return <DiffView diff={diff} />;
+}
+
+const SHARED_OPTIONS: editor.IEditorOptions = {
+  readOnly: true,
+  domReadOnly: true,
+  automaticLayout: true,
+  scrollBeyondLastLine: false,
+  minimap: { enabled: false },
+  overviewRulerLanes: 0,
+  folding: false,
+  glyphMargin: false,
+  lineHeight: LINE_HEIGHT,
+  fontSize: 12,
+  scrollbar: { vertical: 'hidden', alwaysConsumeMouseWheel: false, verticalScrollbarSize: 0 },
+  stickyScroll: { enabled: false },
+};
+
+// A whole added or deleted file, every line tinted green or red.
+function WholeFileView({ text, language, side }: { text: string; language: string; side: 'added' | 'deleted' }) {
+  const dark = useIsDark();
+  const monaco = useMonaco();
+  const [ref, near] = useNearScreen<HTMLDivElement>();
+  const tokenizerReady = useTokenizer(monaco, language);
+  const [drawn, setDrawn] = useState(false);
+  const [height, setHeight] = useState(() => estimateHeight({ kind: 'code', language, original: '', modified: text }));
+
+  useEffect(() => {
+    if (monaco) monaco.editor.setTheme(defineMonacoTheme(monaco, dark));
+  }, [monaco, dark]);
+
+  const onMount = (ed: editor.IStandaloneCodeEditor) => {
+    const resize = () => setHeight(Math.max(MIN_HEIGHT, ed.getContentHeight()));
+    ed.onDidContentSizeChange(resize);
+    resize();
+    const model = ed.getModel();
+    if (model) {
+      forceTokenization(model);
+      ed.createDecorationsCollection([
+        {
+          range: { startLineNumber: 1, startColumn: 1, endLineNumber: model.getLineCount(), endColumn: 1 },
+          options: { isWholeLine: true, className: `pridm-whole-${side}`, marginClassName: `pridm-whole-${side}-margin` },
+        },
+      ]);
+    }
+    setDrawn(true);
+  };
+
+  const pending = near === null || (near && !drawn);
+  return (
+    <div ref={ref} style={{ height }} data-diff-pending={pending || undefined}>
+      {near && tokenizerReady && (
+        <Editor
+          value={text}
+          language={language}
+          theme={monacoThemeName(dark)}
+          beforeMount={(m: Monaco) => defineMonacoTheme(m, dark)}
+          onMount={onMount}
+          options={SHARED_OPTIONS}
+        />
+      )}
+    </div>
+  );
+}
+
+function DiffView({ diff }: { diff: CodeDiff }) {
   const dark = useIsDark();
   const monaco = useMonaco();
   const [ref, near] = useNearScreen<HTMLDivElement>();
@@ -59,21 +129,13 @@ export function CodeDiffView({ diff }: { diff: CodeDiff }) {
             // A change within one line is shown on that one line, with the
             // old text struck through next to the new text.
             experimental: { useTrueInlineView: true },
+            // Only the changes and 3 lines around them show. The fold bars between
+            // reveal 20 more lines a click, up or down, or everything; theme.css
+            // makes their arrows visible.
             hideUnchangedRegions: { enabled: true, contextLineCount: 3, minimumLineCount: 3, revealLineCount: 20 },
-            readOnly: true,
-            domReadOnly: true,
             originalEditable: false,
-            automaticLayout: true,
-            scrollBeyondLastLine: false,
-            minimap: { enabled: false },
             renderOverviewRuler: false,
-            overviewRulerLanes: 0,
-            folding: false,
-            glyphMargin: false,
-            lineHeight: LINE_HEIGHT,
-            fontSize: 12,
-            scrollbar: { vertical: 'hidden', alwaysConsumeMouseWheel: false, verticalScrollbarSize: 0 },
-            stickyScroll: { enabled: false },
+            ...SHARED_OPTIONS,
           }}
         />
       )}

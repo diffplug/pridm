@@ -24,21 +24,26 @@ export const api = {
 
 export type Loaded<T> = { state: 'loading' } | { state: 'error'; error: string } | { state: 'done'; value: T };
 
-// Runs `load` whenever `key` changes. `reload` runs it again.
-export function useLoad<T>(key: string, load: () => Promise<T>): [Loaded<T>, () => void] {
+// Runs `load` whenever `key` changes. `reload` runs it again, keeping the last
+// result on screen meanwhile; `busy` is true while any load is running.
+export function useLoad<T>(key: string, load: () => Promise<T>): [Loaded<T>, () => void, boolean] {
   const [result, setResult] = useState<Loaded<T>>({ state: 'loading' });
   const [n, setN] = useState(0);
+  const [busy, setBusy] = useState(true);
   useEffect(() => {
     let current = true;
     setResult((r) => (r.state === 'done' ? r : { state: 'loading' }));
-    load().then(
-      (value) => current && setResult({ state: 'done', value }),
-      (e: Error) => current && setResult({ state: 'error', error: e.message }),
-    );
+    setBusy(true);
+    load()
+      .then(
+        (value) => current && setResult({ state: 'done', value }),
+        (e: Error) => current && setResult({ state: 'error', error: e.message }),
+      )
+      .finally(() => current && setBusy(false));
     return () => {
       current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, n]);
-  return [result, () => setN((x) => x + 1)];
+  return [result, () => setN((x) => x + 1), busy];
 }

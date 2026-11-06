@@ -32,11 +32,9 @@ export function DeltaView({ overview, open, onToggle, diffs, onFocus }: DeltaVie
 }
 
 function DeltaHeader({ overview, onFocus }: { overview: DeltaOverview; onFocus?: (focus: Focus) => void }) {
-  const { delta, categories } = overview;
+  const { delta } = overview;
   const { local, pr } = delta;
   const uncommitted = local ? local.uncommitted.staged + local.uncommitted.unstaged + local.uncommitted.untracked : 0;
-  const additions = categories.reduce((n, c) => n + c.additions, 0);
-  const deletions = categories.reduce((n, c) => n + c.deletions, 0);
 
   const facts: React.ReactNode[] = [];
   if (delta.branch && delta.branch !== delta.title) facts.push(<code key="branch">{delta.branch}</code>);
@@ -63,12 +61,7 @@ function DeltaHeader({ overview, onFocus }: { overview: DeltaOverview; onFocus?:
   return (
     <header className="pridm-delta-header">
       <div className="pridm-delta-title">
-        <h2>
-          {delta.title}{' '}
-          <span className="pridm-delta-total">
-            <span className="pridm-additions">+{additions}</span> <span className="pridm-deletions">−{deletions}</span>
-          </span>
-        </h2>
+        <h2>{delta.title}</h2>
         {onFocus && <FocusButtons focus={overview.focus ?? 'normal'} onChange={onFocus} />}
       </div>
       <div className="pridm-facts">

@@ -26,6 +26,7 @@ src/
     mdmerge.ts             builds the merged markdown (tested)
     classify.ts            puts paths into categories (tested)
     overview.ts            groups files into DeltaOverview / CategoryDiff (tested)
+    fold.ts                which markdown blocks to show, and which to fold (tested)
     language.ts            Monaco language ids by file extension
   server/
     api.ts                 Vite plugin with the /api routes
@@ -46,10 +47,11 @@ src/
     monaco.ts              bundles the local monaco-editor and its workers
     stories.ts             dark twins, and waiting for diffs to draw
     components/            CategoryCounts, CategorySection, CodeDiffView, Dashboard,
-                           DeltaRow, DeltaView, FileDiffView, FocusButtons, MarkdownDiffView,
-                           PlusMinus
+                           DeltaRow, DeltaView, ExpandBar, FileDiffView, FocusButtons,
+                           MarkdownDiffView, PlusMinus
     fixtures/              typed example data for stories
-      real/self.json       pridm's own history as a delta; `bun run fixture:self`
+      real/self.json       pridm's own history, from its first commit to a pinned one, as a
+                           delta; `bun run fixture:self`
 scripts/
   fixture-self.ts          builds real/self.json with the server's git code
 test/

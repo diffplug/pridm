@@ -1,5 +1,5 @@
 // Builds the "pridm reviewing its own build" fixture for Storybook: every file
-// changed between pridm's first commit and HEAD, with its contents.
+// changed between pridm's first commit and a pinned later one, with its contents.
 //
 //   bun scripts/fixture-self.ts
 
@@ -11,7 +11,9 @@ import { git } from '../src/server/exec.ts';
 
 const cwd = new URL('..', import.meta.url).pathname;
 const base = 'a76a1ce';  // "Sketch Prism's data model and README"
-const head = (await git(cwd, ['rev-parse', 'HEAD'])).trim();
+// Pinned, so the fixture, and every story built on it, only changes when someone
+// moves this on purpose. 9a7e7bc is "Phase 2: the delta view".
+const head = (await git(cwd, ['rev-parse', '9a7e7bc'])).trim();
 const range: Range = { cwd, base, head };
 
 const globs = DEFAULT_CATEGORIES['*'];
