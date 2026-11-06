@@ -117,6 +117,7 @@ interface DeltaList {
 
 interface DeltaOverview {
   delta: BulkDelta;
+  focus?: Focus;             // set by the server; fixtures can leave it out
   categories: (CategoryStat & { files: FileStat[] })[]; // shown in each collapsed header
 }
 

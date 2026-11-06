@@ -31,10 +31,12 @@ Markdown files are counted in **words**, shown as `+105w −686w`, because they'
 
 ## Dashboard
 
-One row per delta, sorted by: pinned first, then deltas with a surface that needs attention, then most recently updated. Muted deltas go to the bottom. Each row shows:
+One row per delta, sorted by: pinned first, then most recently updated, then PRs that can't be opened. Muted deltas go to the bottom, dimmed. (Deltas with a surface that needs attention will come right after pinned ones, once surfaces are built.) Each row shows:
 
 - the title, branch, and PR number if there is one
 - each category's +/−, e.g. `spec +120 −14 · prod +88 −31`
 - uncommitted and unpushed counts
 - the Dormouse surfaces working on it, e.g. "claude (waiting on you) · npm run dev · browser"
-- buttons to pin or mute
+- buttons to pin or mute, which show on hover, or always when they're on. The delta's header has the same buttons.
+
+Pin and mute take effect at once and are saved in the background to `~/.pridm/state.json`. If saving fails, the change is undone and a warning says why.

@@ -1,9 +1,18 @@
-import type { DeltaSummary } from '../../types.ts';
+import type { DeltaSummary, Focus } from '../../types.ts';
 import { CategoryCounts } from './CategoryCounts.tsx';
+import { FocusButtons } from './FocusButtons.tsx';
+
+export interface DeltaRowProps {
+  summary: DeltaSummary;
+  href: string;
+  onFocus?: (focus: Focus) => void;
+}
 
 // One delta on the dashboard. The whole row links to the delta, or, for a PR
-// that can't be opened here, to the PR on GitHub.
-export function DeltaRow({ summary, href }: { summary: DeltaSummary; href: string }) {
+// that can't be opened here, to the PR on GitHub. The title's link is stretched
+// over the row in CSS, so the pin and mute buttons can sit on top of it
+// (buttons inside a link aren't valid HTML).
+export function DeltaRow({ summary, href, onFocus }: DeltaRowProps) {
   const { delta, categories, unavailable } = summary;
   const { local, pr } = delta;
   const uncommitted = local ? local.uncommitted.staged + local.uncommitted.unstaged + local.uncommitted.untracked : 0;
@@ -20,10 +29,13 @@ export function DeltaRow({ summary, href }: { summary: DeltaSummary; href: strin
   const updated = local?.updatedAt ?? pr?.updatedAt;
   if (updated) facts.push(<span key="time">{relativeTime(updated)}</span>);
 
-  if (unavailable) {
-    return (
-      <a className="pridm-row" href={pr?.url} target="_blank" rel="noreferrer" data-unavailable>
-        <div className="pridm-row-title">{delta.title}</div>
+  const link = unavailable ? { href: pr?.url, target: '_blank', rel: 'noreferrer' } : { href };
+  return (
+    <div className="pridm-row" data-focus={summary.focus} data-unavailable={unavailable ? '' : undefined}>
+      <div className="pridm-row-main">
+        <a className="pridm-row-title" {...link}>
+          {delta.title}
+        </a>
         <div className="pridm-row-facts">
           {facts.map((f, i) => (
             <span key={i}>
@@ -32,26 +44,12 @@ export function DeltaRow({ summary, href }: { summary: DeltaSummary; href: strin
             </span>
           ))}
         </div>
-        <div className="pridm-row-counts pridm-muted">{unavailable}. Opens on GitHub.</div>
-      </a>
-    );
-  }
-
-  return (
-    <a className="pridm-row" href={href} data-focus={summary.focus}>
-      <div className="pridm-row-title">{delta.title}</div>
-      <div className="pridm-row-facts">
-        {facts.map((f, i) => (
-          <span key={i}>
-            {i > 0 && <span className="pridm-muted"> · </span>}
-            {f}
-          </span>
-        ))}
+        <div className="pridm-row-counts">
+          {unavailable ? <span className="pridm-muted">{unavailable}. Opens on GitHub.</span> : <CategoryCounts categories={categories} />}
+        </div>
       </div>
-      <div className="pridm-row-counts">
-        <CategoryCounts categories={categories} />
-      </div>
-    </a>
+      {onFocus && <FocusButtons focus={summary.focus} onChange={onFocus} />}
+    </div>
   );
 }
 

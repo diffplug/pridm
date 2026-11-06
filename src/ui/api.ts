@@ -1,7 +1,7 @@
 // Fetches from the server's /api routes. See src/server/api.ts.
 
 import { useEffect, useState } from 'react';
-import type { Category, CategoryDiff, DeltaId, DeltaList, DeltaOverview } from '../types.ts';
+import type { Category, CategoryDiff, DeltaId, DeltaList, DeltaOverview, Focus } from '../types.ts';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`/api/${path}`);
@@ -16,6 +16,10 @@ export const api = {
   deltas: () => get<DeltaList>('deltas'),
   overview: (deltaId: DeltaId) => get<DeltaOverview>(`deltas/${id(deltaId)}`),
   diff: (deltaId: DeltaId, category: Category) => get<CategoryDiff>(`deltas/${id(deltaId)}/${encodeURIComponent(category)}`),
+  setFocus: async (deltaId: DeltaId, focus: Focus) => {
+    const res = await fetch(`/api/focus/${id(deltaId)}`, { method: 'PUT', body: JSON.stringify({ focus }) });
+    if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
+  },
 };
 
 export type Loaded<T> = { state: 'loading' } | { state: 'error'; error: string } | { state: 'done'; value: T };

@@ -3,6 +3,7 @@
 //   GET /api/deltas                  DeltaList
 //   GET /api/deltas/:id              DeltaOverview
 //   GET /api/deltas/:id/:category    CategoryDiff
+//   PUT /api/focus/:id               body {"focus": "pinned" | "normal" | "muted"}
 //
 // Ids contain "/" and ":", so they're URL-encoded. The server is long-lived:
 // it remembers how to re-read each delta from the last listing, but every
@@ -10,10 +11,10 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';
-import type { CategoryDiff, DeltaId, DeltaList, DeltaOverview, DeltaSummary } from '../types.ts';
+import type { CategoryDiff, DeltaId, DeltaList, DeltaOverview, DeltaSummary, Focus } from '../types.ts';
 import { sectionOrder } from '../shared/classify.ts';
 import { buildOverview, categoryDiff, categoryStats } from '../shared/overview.ts';
-import { categoryConfig, state } from './config.ts';
+import { categoryConfig, setFocus, state } from './config.ts';
 import { inspect, localDelta, plan, prOnlyDelta, scan, unavailableDelta, type LocalDelta } from './discover.ts';
 import { openPrs, type OpenPr } from './prs.ts';
 import { fileChange, fileStats } from './sources/git.ts';
@@ -81,7 +82,18 @@ async function fresh(id: DeltaId): Promise<LocalDelta> {
 
 async function overview(id: DeltaId): Promise<DeltaOverview> {
   const d = await fresh(id);
-  return buildOverview(d.delta, d.stats, sectionOrder(d.globs));
+  return { ...buildOverview(d.delta, d.stats, sectionOrder(d.globs)), focus: state().focus[id] ?? 'normal' };
+}
+
+const FOCUSES: Focus[] = ['pinned', 'normal', 'muted'];
+
+async function focus(id: DeltaId, req: IncomingMessage): Promise<{ id: DeltaId; focus: Focus }> {
+  let raw = '';
+  for await (const chunk of req) raw += chunk;
+  const f = (JSON.parse(raw || '{}') as { focus?: unknown }).focus;
+  if (!FOCUSES.includes(f as Focus)) throw new HttpError(400, `focus must be one of ${FOCUSES.join(', ')}`);
+  setFocus(id, f as Focus);
+  return { id, focus: f as Focus };
 }
 
 async function diff(id: DeltaId, category: string): Promise<CategoryDiff> {
@@ -106,8 +118,9 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
   let body: unknown;
   try {
-    if (req.method !== 'GET' || parts[0] !== 'deltas' || parts.length > 3) throw new HttpError(404, `No route ${path}`);
-    if (parts.length === 1) body = await deltas();
+    if (req.method === 'PUT' && parts[0] === 'focus' && parts.length === 2) body = await focus(parts[1]!, req);
+    else if (req.method !== 'GET' || parts[0] !== 'deltas' || parts.length > 3) throw new HttpError(404, `No route ${req.method} ${path}`);
+    else if (parts.length === 1) body = await deltas();
     else if (parts.length === 2) body = await overview(parts[1]!);
     else body = await diff(parts[1]!, parts[2]!);
     res.setHeader('Content-Type', 'application/json');

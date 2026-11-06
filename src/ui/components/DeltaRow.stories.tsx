@@ -8,7 +8,7 @@ const meta: Meta<typeof DeltaRow> = {
   title: 'Dashboard/DeltaRow',
   component: DeltaRow,
   play: waitForDiffs,
-  args: { href: '#' },
+  args: { href: '#', onFocus: () => {} },
 };
 export default meta;
 type Story = StoryObj<typeof DeltaRow>;
@@ -20,13 +20,17 @@ export const PrNotCloned: Story = { args: { summary: unavailablePr } };
 export const LocalAndPrUncommittedAndUnpushed: Story = { args: { summary: summary(localAndPr) } };
 export const NeverPushed: Story = { args: { summary: summary(neverPushed) } };
 export const CustomCategories: Story = { args: { summary: summary(customCategories) } };
+export const Pinned: Story = { args: { summary: summary(selfDelta, 'pinned') } };
 export const Muted: Story = { args: { summary: summary(selfDelta, 'muted') } };
 export const NoChanges: Story = { args: { summary: summary(empty) } };
 
 export const LocalOnlyDark = dark(LocalOnly);
 export const PrOnlyDark = dark(PrOnly);
+export const DraftPrDark = dark(DraftPr);
+export const PrNotClonedDark = dark(PrNotCloned);
 export const LocalAndPrUncommittedAndUnpushedDark = dark(LocalAndPrUncommittedAndUnpushed);
 export const NeverPushedDark = dark(NeverPushed);
 export const CustomCategoriesDark = dark(CustomCategories);
+export const PinnedDark = dark(Pinned);
 export const MutedDark = dark(Muted);
 export const NoChangesDark = dark(NoChanges);

@@ -31,7 +31,7 @@ src/
     api.ts                 Vite plugin with the /api routes
     exec.ts                run git / gh / dor, in parallel with a limit
     origin.ts              normalize remote URLs into RepoKeys (tested)
-    config.ts              read ~/.pridm/categories.json and state.json
+    config.ts              read ~/.pridm/categories.json and state.json; save pin and mute (tested)
     prs.ts                 your open PRs, from one GitHub GraphQL query
     discover.ts            checkouts + PRs → BulkDelta[], and the join (tested)
     surfaces.ts            dor list → SurfaceRef[] per delta (not yet)
@@ -46,7 +46,8 @@ src/
     monaco.ts              bundles the local monaco-editor and its workers
     stories.ts             dark twins, and waiting for diffs to draw
     components/            CategoryCounts, CategorySection, CodeDiffView, Dashboard,
-                           DeltaRow, DeltaView, FileDiffView, MarkdownDiffView, PlusMinus
+                           DeltaRow, DeltaView, FileDiffView, FocusButtons, MarkdownDiffView,
+                           PlusMinus
     fixtures/              typed example data for stories
       real/self.json       pridm's own history as a delta; `bun run fixture:self`
 scripts/
@@ -61,7 +62,7 @@ test/
 | `GET /api/deltas` | `DeltaList`: `DeltaSummary[]` plus warnings |
 | `GET /api/deltas/:id` | `DeltaOverview` |
 | `GET /api/deltas/:id/:category` | `CategoryDiff` |
-| `PUT /api/focus/:id` | sets `pinned`, `normal`, or `muted` (not built yet) |
+| `PUT /api/focus/:id` | body `{"focus": "pinned" \| "normal" \| "muted"}`; saved in `~/.pridm/state.json` |
 
 Ids contain `/` and `:`, so they're URL-encoded.
 

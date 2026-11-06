@@ -46,10 +46,15 @@ body {
   cursor: pointer;
   user-select: none;
   position: sticky;
-  top: var(--pridm-section-header-height);
+  top: 0;
   z-index: 5;
   font-family: var(--fontStack-monospace);
   font-size: 12px;
+}
+
+/* Inside a category, the file's header sticks just under the category's. */
+.pridm-section .pridm-file-header {
+  top: var(--pridm-section-header-height);
 }
 
 .pridm-file[data-open='true'] > .pridm-file-header {
@@ -324,11 +329,24 @@ body {
 }
 
 .pridm-row {
-  display: block;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--borderColor-muted);
-  color: inherit;
-  text-decoration: none;
+}
+
+.pridm-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The title's link covers the whole row; the pin and mute buttons sit above it. */
+.pridm-row-title::after {
+  content: '';
+  position: absolute;
+  inset: 0;
 }
 
 .pridm-row:hover .pridm-row-title {
@@ -353,8 +371,11 @@ body {
 }
 
 .pridm-row-title {
+  display: block;
   font-size: 15px;
   font-weight: 600;
+  color: var(--fgColor-default);
+  text-decoration: none;
 }
 
 .pridm-row-facts {
@@ -373,4 +394,55 @@ body {
 
 .pridm-row-counts {
   margin-top: 2px;
+}
+
+/* ─── Pin and mute ────────────────────────────────────────── */
+
+.pridm-focus {
+  position: relative;  /* above the row's stretched link */
+  z-index: 1;
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.pridm-focus button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--fgColor-muted);
+  cursor: pointer;
+  /* only shown on hover, unless it's on */
+  opacity: 0;
+}
+
+.pridm-row:hover .pridm-focus button,
+.pridm-delta-title .pridm-focus button,
+.pridm-focus button:focus-visible,
+.pridm-focus button[aria-pressed='true'] {
+  opacity: 1;
+}
+
+.pridm-focus button:hover {
+  background: var(--bgColor-muted);
+  color: var(--fgColor-default);
+}
+
+.pridm-focus button[aria-pressed='true'] {
+  color: var(--fgColor-accent);
+}
+
+.pridm-delta-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pridm-delta-title h2 {
+  flex: 1;
 }

@@ -1,10 +1,10 @@
-import type { DeltaSummary } from '../../types.ts';
+import type { DeltaId, DeltaSummary, Focus } from '../../types.ts';
 import { routeHash } from '../route.ts';
 import { DeltaRow } from './DeltaRow.tsx';
 
 // Every delta, in the server's order (newest first, PRs that can't be opened
 // last), with pinned ones at the top and muted ones at the bottom.
-export function Dashboard({ summaries }: { summaries: DeltaSummary[] }) {
+export function Dashboard({ summaries, onFocus }: { summaries: DeltaSummary[]; onFocus?: (id: DeltaId, focus: Focus) => void }) {
   if (summaries.length === 0) {
     return <p className="pridm-muted">No changes in any checkout under your scan folders.</p>;
   }
@@ -13,7 +13,12 @@ export function Dashboard({ summaries }: { summaries: DeltaSummary[] }) {
   return (
     <div className="pridm-dashboard">
       {sorted.map((s) => (
-        <DeltaRow key={s.delta.id} summary={s} href={routeHash({ page: 'delta', id: s.delta.id, open: [] })} />
+        <DeltaRow
+          key={s.delta.id}
+          summary={s}
+          href={routeHash({ page: 'delta', id: s.delta.id, open: [] })}
+          onFocus={onFocus && ((f) => onFocus(s.delta.id, f))}
+        />
       ))}
     </div>
   );
