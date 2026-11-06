@@ -22,13 +22,16 @@ vite.config.ts             includes the /api plugin
 .storybook/
 src/
   types.ts                 the data model, shared by server and UI
-  shared/
-    mdmerge.ts             builds the merged markdown (pure, tested)
+  shared/                  pure code, used by both the server and the UI
+    mdmerge.ts             builds the merged markdown (tested)
+    classify.ts            puts paths into categories (tested)
+    overview.ts            groups files into DeltaOverview / CategoryDiff (tested)
+    language.ts            Monaco language ids by file extension
   server/
     api.ts                 Vite plugin with the /api routes
     exec.ts                run git / gh / dor and parse output
     origin.ts              normalize remote URLs into RepoKeys
-    categories.ts          load categories.json, classify paths
+    categories.ts          load categories.json
     state.ts               read and write ~/.pridm/state.json
     discover.ts            worktrees + PRs → BulkDelta[]
     surfaces.ts            dor list → SurfaceRef[] per delta
@@ -39,9 +42,13 @@ src/
     App.tsx                hash routing: dashboard, delta
     hooks.ts               fetch from /api
     theme.ts               Primer setup, Monaco theme, light/dark
-    components/            CategoryCounts, CategorySection, CodeDiffView,
+    monaco.ts              bundles the local monaco-editor and its workers
+    components/            CategoryCounts, CategorySection, CodeDiffView, FileDiffView,
                            MarkdownDiffView, DeltaRow, DeltaView, SurfaceChips
     fixtures/              typed example data for stories
+      real/self.json       pridm's own history as a delta; `bun run fixture:self`
+scripts/
+  fixture-self.ts          builds real/self.json with the server's git code
 test/
 ```
 

@@ -75,8 +75,8 @@ interface SurfaceRef {
 //   2. DeltaOverview   one delta: every category collapsed, showing +/- and its file list
 //   3. CategoryDiff    loaded when you expand a category. This is the expensive
 //                      part: both full versions of every file.
-// Numbers come from `git diff --numstat`. Markdown files count source lines,
-// even though they are displayed rendered.
+// Line counts come from `git diff --numstat`. Markdown files are also counted
+// in words (FileStat.words), which the UI shows instead of lines.
 
 // Category names are defined in categories.json. OTHER is the only built-in one.
 type Category = string;
@@ -91,6 +91,13 @@ interface CategoryStat {
   fileCount: number;
   additions: number;
   deletions: number;
+  words?: WordCounts;        // set when every file in the category is markdown
+}
+
+// Markdown files are counted in words as well as lines; the UI shows words.
+interface WordCounts {
+  added: number;
+  removed: number;
 }
 
 interface DeltaSummary {
@@ -123,6 +130,7 @@ interface FileStat {
   deletions: number;
   isBinary: boolean;
   committed: boolean;        // false = only in the working tree (local source only)
+  words?: WordCounts;        // markdown files only
 }
 
 interface FileChange extends FileStat {
@@ -166,8 +174,8 @@ type CategoryConfig = { '*': CategoryGlobs } & Record<RepoKey, CategoryGlobs>;
 
 const DEFAULT_CATEGORIES: CategoryConfig = {
   '*': {
-    test: ['**/test/**', '**/tests/**', '**/__tests__/**', '**/*.test.*', '**/*.spec.{ts,tsx,js,jsx}', '**/*_test.go', '**/test_*.py'],
     spec: ['**/spec/**', '**/specs/**', 'docs/**', 'rfcs/**', '**/*.md', '**/*.mdx'],
+    test: ['**/test/**', '**/tests/**', '**/__tests__/**', '**/*.test.*', '**/*.spec.{ts,tsx,js,jsx}', '**/*_test.go', '**/test_*.py'],
     prod: ['**/*.{ts,tsx,js,jsx,go,py,java,kt,rs,rb,swift,c,cpp,h}'],
   },
 };
@@ -183,7 +191,7 @@ export {
   DEFAULT_CATEGORIES,
   OTHER,
   type BulkDelta, type DeltaId, type RepoKey, type LocalCheckout, type PullRequest,
-  type SurfaceRef, type Category, type Focus, type CategoryStat, type DeltaSummary,
+  type SurfaceRef, type Category, type Focus, type CategoryStat, type WordCounts, type DeltaSummary,
   type DeltaOverview, type CategoryDiff, type FileStatus, type FileStat, type FileChange,
   type CodeDiff, type MarkdownDiff, type CategoryGlobs, type CategoryConfig, type PridmState,
 };
