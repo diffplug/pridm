@@ -1,14 +1,26 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { dark, waitForDiffs } from '../stories.ts';
-import type { Category, CategoryDiff } from '../../types.ts';
+import type { Category, CategoryDiff, Focus } from '../../types.ts';
 import { DeltaView } from './DeltaView.tsx';
 import { customCategories, empty, localAndPr, neverPushed, prOnly, selfDelta, type DeltaFixture } from '../fixtures/deltas.ts';
 
 // Keeps which sections are open, and "loads" a section's diffs the first time
 // it opens, after a short delay, the way the app will fetch them.
-function Interactive({ fixture, initiallyOpen = [], neverLoad = false }: { fixture: DeltaFixture; initiallyOpen?: Category[]; neverLoad?: boolean }) {
+// Also keeps pin and mute.
+function Interactive({
+  fixture,
+  initiallyOpen = [],
+  neverLoad = false,
+  focus: initialFocus = 'normal',
+}: {
+  fixture: DeltaFixture;
+  initiallyOpen?: Category[];
+  neverLoad?: boolean;
+  focus?: Focus;
+}) {
   const [open, setOpen] = useState<Category[]>(initiallyOpen);
+  const [focus, setFocus] = useState<Focus>(initialFocus);
   const [diffs, setDiffs] = useState<Partial<Record<Category, CategoryDiff>>>(() =>
     neverLoad ? {} : Object.fromEntries(initiallyOpen.map((c) => [c, fixture.diffs[c]])),
   );
@@ -18,7 +30,7 @@ function Interactive({ fixture, initiallyOpen = [], neverLoad = false }: { fixtu
       setTimeout(() => setDiffs((d) => ({ ...d, [category]: fixture.diffs[category] })), 400);
     }
   };
-  return <DeltaView overview={fixture.overview} open={open} onToggle={onToggle} diffs={diffs} />;
+  return <DeltaView overview={{ ...fixture.overview, focus }} open={open} onToggle={onToggle} diffs={diffs} onFocus={setFocus} />;
 }
 
 const meta: Meta<typeof Interactive> = {
@@ -37,6 +49,8 @@ export const PrOnly: Story = { args: { fixture: prOnly } };
 export const LocalAndPr: Story = { args: { fixture: localAndPr } };
 export const NeverPushed: Story = { args: { fixture: neverPushed } };
 export const Empty: Story = { args: { fixture: empty } };
+export const Pinned: Story = { args: { fixture: selfDelta, focus: 'pinned' } };
+export const Muted: Story = { args: { fixture: selfDelta, focus: 'muted' } };
 
 export const SelfReviewDark = dark(SelfReview);
 export const SpecAndTestOpenDark = dark(SpecAndTestOpen);
@@ -46,3 +60,5 @@ export const PrOnlyDark = dark(PrOnly);
 export const LocalAndPrDark = dark(LocalAndPr);
 export const NeverPushedDark = dark(NeverPushed);
 export const EmptyDark = dark(Empty);
+export const PinnedDark = dark(Pinned);
+export const MutedDark = dark(Muted);

@@ -11,7 +11,7 @@ const meta: Meta<typeof Dashboard> = {
 export default meta;
 type Story = StoryObj<typeof Dashboard>;
 
-export const Several: Story = { args: { summaries } };
+export const Several: Story = { args: { summaries, onFocus: () => {} } };
 export const Empty: Story = { args: { summaries: [] } };
 
 export const SeveralDark = dark(Several);

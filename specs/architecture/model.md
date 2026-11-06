@@ -38,7 +38,7 @@ interface BulkDelta {
 
 ## Saved state
 
-`~/.pridm/state.json` (`PridmState`) is written by pridm. It holds focus per delta (pinned, normal, muted) and `scanRoots`, the folders to look in for clones.
+`~/.pridm/state.json` (`PridmState`) is written by pridm when you pin or mute a delta. It keeps anything else in the file, like a hand-written `scanRoots`, as it was. It holds focus per delta (pinned, normal, muted) and `scanRoots`, the folders to look in for clones.
 
 Category globs are in a separate file, `~/.pridm/categories.json`, because you edit that one by hand. See [Categories](categories.md).
 

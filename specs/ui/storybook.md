@@ -6,7 +6,8 @@ This works because components only take data as props, and fetching happens in a
 
 ## States to cover
 
-- **Dashboard row:** local only, PR only, both; uncommitted changes; local commits not pushed; pinned and muted; a surface that needs attention; one category empty.
+- **Dashboard row:** local only, PR only, draft PR, PR not cloned, both; uncommitted changes; local commits not pushed; pinned and muted; one category empty.
+- **Pin and mute buttons:** normal, pinned, muted; also in the delta header.
 - **Category counts:** the default categories, a single category, a custom category, many categories, an empty delta.
 - **Category section:** collapsed (totals only), expanded with every file collapsed, loading, a custom category.
 - **File diff:** collapsed, expanded, loading.

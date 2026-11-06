@@ -1,20 +1,22 @@
-import type { Category, CategoryDiff, DeltaOverview } from '../../types.ts';
+import type { Category, CategoryDiff, DeltaOverview, Focus } from '../../types.ts';
 import { CategorySection } from './CategorySection.tsx';
+import { FocusButtons } from './FocusButtons.tsx';
 
 export interface DeltaViewProps {
   overview: DeltaOverview;
   open: Category[];
   onToggle: (category: Category, open: boolean) => void;
   diffs: Partial<Record<Category, CategoryDiff>>;
+  onFocus?: (focus: Focus) => void;
 }
 
 // One delta: a header, then one collapsible section per category.
 // Which sections are open, and loading their diffs, is up to the caller.
-export function DeltaView({ overview, open, onToggle, diffs }: DeltaViewProps) {
+export function DeltaView({ overview, open, onToggle, diffs, onFocus }: DeltaViewProps) {
   const { delta, categories } = overview;
   return (
     <div className="pridm-delta">
-      <DeltaHeader overview={overview} />
+      <DeltaHeader overview={overview} onFocus={onFocus} />
       {categories.length === 0 && <p className="pridm-muted">No changes compared with {delta.base.ref}.</p>}
       {categories.map((section) => (
         <CategorySection
@@ -29,7 +31,7 @@ export function DeltaView({ overview, open, onToggle, diffs }: DeltaViewProps) {
   );
 }
 
-function DeltaHeader({ overview }: { overview: DeltaOverview }) {
+function DeltaHeader({ overview, onFocus }: { overview: DeltaOverview; onFocus?: (focus: Focus) => void }) {
   const { delta, categories } = overview;
   const { local, pr } = delta;
   const uncommitted = local ? local.uncommitted.staged + local.uncommitted.unstaged + local.uncommitted.untracked : 0;
@@ -60,12 +62,15 @@ function DeltaHeader({ overview }: { overview: DeltaOverview }) {
 
   return (
     <header className="pridm-delta-header">
-      <h2>
-        {delta.title}{' '}
-        <span className="pridm-delta-total">
-          <span className="pridm-additions">+{additions}</span> <span className="pridm-deletions">−{deletions}</span>
-        </span>
-      </h2>
+      <div className="pridm-delta-title">
+        <h2>
+          {delta.title}{' '}
+          <span className="pridm-delta-total">
+            <span className="pridm-additions">+{additions}</span> <span className="pridm-deletions">−{deletions}</span>
+          </span>
+        </h2>
+        {onFocus && <FocusButtons focus={overview.focus ?? 'normal'} onChange={onFocus} />}
+      </div>
       <div className="pridm-facts">
         {facts.map((f, i) => (
           <span key={i}>
