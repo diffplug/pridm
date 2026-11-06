@@ -1,0 +1,4 @@
+{
+  "storybookDir": "storybook-static",
+  "buildCommand": "bun run build-storybook"
+}

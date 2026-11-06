@@ -30,7 +30,10 @@ export function useIsDark(): boolean {
 // current values. Call this after the color mode is applied.
 function cssVar(name: string): string | undefined {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return value.startsWith('#') ? value : undefined;
+  if (!value.startsWith('#')) return undefined;
+  // Monaco only takes #rrggbb or #rrggbbaa, and a minified build shortens #ffffff to #fff.
+  const hex = value.slice(1);
+  return hex.length === 3 || hex.length === 4 ? '#' + [...hex].map((c) => c + c).join('') : value;
 }
 
 export function monacoThemeName(dark: boolean): string {
