@@ -11,8 +11,8 @@ Each origin has its own globs in `~/.pridm/categories.json`, which you edit by h
 ```json
 {
   "*": {
-    "test": ["**/test/**", "**/tests/**", "**/*.test.*"],
     "spec": ["**/spec/**", "**/specs/**", "**/*.md"],
+    "test": ["**/test/**", "**/tests/**", "**/*.test.*"],
     "prod": ["**/*.{ts,js,go,py,java,kt}"]
   },
   "github.com/diffplug/spotless": {
@@ -24,7 +24,7 @@ Each origin has its own globs in `~/.pridm/categories.json`, which you edit by h
 }
 ```
 
-- Categories are checked in the order they're written, and the first one with a matching glob wins. In the `*` entry, `test/README.md` is a test, not a spec.
+- Categories are checked in the order they're written, and the first one with a matching glob wins. In the `*` entry, `test/README.md` is a spec, because `spec` comes first. Put `test` first if you'd rather it were a test, but then tests are also the first section.
 - A file that matches nothing is `other`. You can also list `other` yourself, to claim files before a later, broader category does (e.g. `"other": ["**/generated/**"]` before `"prod": ["**"]`).
 - The sections of a delta appear in the same order as its origin's categories, with `other` last. Categories with no changed files are left out.
 - `*` applies to every origin without its own entry. An origin's entry replaces `*` completely; the two aren't merged, so you can read an origin's rules in one place.

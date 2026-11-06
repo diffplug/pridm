@@ -4,6 +4,7 @@
 import { diffLines } from 'diff';
 import type { FileChange, FileStatus } from '../../types.ts';
 import { mergeMarkdown } from '../../shared/mdmerge.ts';
+import { wordCounts } from '../../shared/words.ts';
 import designBefore from './real/design.before.md?raw';
 import designAfter from './real/design.after.md?raw';
 import typesBefore from './real/types.before.ts.txt?raw';
@@ -41,6 +42,7 @@ function base(path: string, original: string, modified: string, o: Options) {
 export function markdownFile(path: string, original: string, modified: string, o: Options = {}): FileChange {
   return {
     ...base(path, original, modified, o),
+    words: wordCounts(original, modified),
     diff: { kind: 'markdown', original, modified, merged: mergeMarkdown(original, modified) },
   };
 }
@@ -91,6 +93,7 @@ const greet = `export function greet(name: string): string {
 }
 `;
 
+export const codeOneLine = codeFile('src/greet.ts', 'typescript', greet, greet.replace("'Hello, '", "'Hi there, '"));
 export const codeAdded = codeFile('src/greet.ts', 'typescript', '', greet);
 export const codeDeleted = codeFile('src/greet.ts', 'typescript', greet, '');
 export const codeRenamed = codeFile(

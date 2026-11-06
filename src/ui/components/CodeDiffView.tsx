@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { DiffEditor, useMonaco, type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
-import type { CodeDiff } from '../../types.ts';
 import '../monaco.ts';
+import type { CodeDiff } from '../../types.ts';
 import { defineMonacoTheme, monacoThemeName, useIsDark } from '../theme.ts';
 
 const LINE_HEIGHT = 19;
 const MIN_HEIGHT = 3 * LINE_HEIGHT;
 
-// Monaco's DiffEditor, shown inline with unchanged regions folded.
+// Monaco's DiffEditor, shown inline with unchanged regions folded. A change
+// within a single line stays on one line, instead of a deleted line + an added one.
 // It mounts only once it scrolls near the screen, and sizes itself to its content.
 //
 // It's marked `data-diff-pending` until it has measured whether it's near the screen, and, if it is,
@@ -31,6 +32,7 @@ export function CodeDiffView({ diff }: { diff: CodeDiff }) {
     const resize = () => setHeight(Math.max(MIN_HEIGHT, modified.getContentHeight()));
     modified.onDidContentSizeChange(resize);
     resize();
+    markInlineChanges(ed);
     // Color every line now, before the diff comes back from its worker. Otherwise the deleted lines,
     // which come from the hidden original editor, can paint before they're colored.
     for (const model of [ed.getOriginalEditor().getModel(), modified.getModel()]) {
@@ -54,6 +56,9 @@ export function CodeDiffView({ diff }: { diff: CodeDiff }) {
           options={{
             renderSideBySide: false,
             useInlineViewWhenSpaceIsLimited: true,
+            // A change within one line is shown on that one line, with the
+            // old text struck through next to the new text.
+            experimental: { useTrueInlineView: true },
             hideUnchangedRegions: { enabled: true, contextLineCount: 3, minimumLineCount: 3, revealLineCount: 20 },
             readOnly: true,
             domReadOnly: true,
@@ -74,6 +79,41 @@ export function CodeDiffView({ diff }: { diff: CodeDiff }) {
       )}
     </div>
   );
+}
+
+// Monaco colors the gutter of every changed line with the strong "line number"
+// color. A change shown inline on one line only gets the light line color, so
+// its gutter looks too dark. Mark those lines so theme.css can lighten them.
+function markInlineChanges(ed: editor.IStandaloneDiffEditor) {
+  const original = ed.getOriginalEditor().createDecorationsCollection();
+  const modified = ed.getModifiedEditor().createDecorationsCollection();
+  const update = () => {
+    const o: editor.IModelDeltaDecoration[] = [];
+    const m: editor.IModelDeltaDecoration[] = [];
+    for (const c of ed.getLineChanges() ?? []) {
+      if (!isShownInline(c)) continue;
+      const options = { marginClassName: 'pridm-inline-change', isWholeLine: true };
+      for (let l = c.originalStartLineNumber; l <= c.originalEndLineNumber; l++) o.push({ range: lineRange(l), options });
+      for (let l = c.modifiedStartLineNumber; l <= c.modifiedEndLineNumber; l++) m.push({ range: lineRange(l), options });
+    }
+    original.set(o);
+    modified.set(m);
+  };
+  ed.onDidUpdateDiff(update);
+  update();
+}
+
+// Monaco's own rule for useTrueInlineView: a change is shown inline when it
+// replaces existing lines and every changed piece stays within one line.
+function isShownInline(c: editor.ILineChange): boolean {
+  if (c.originalEndLineNumber === 0 || c.modifiedEndLineNumber === 0 || !c.charChanges) return false;
+  return c.charChanges.every(
+    (cc) => cc.originalStartLineNumber === cc.originalEndLineNumber && cc.modifiedStartLineNumber === cc.modifiedEndLineNumber,
+  );
+}
+
+function lineRange(line: number) {
+  return { startLineNumber: line, startColumn: 1, endLineNumber: line, endColumn: 1 };
 }
 
 // A guess at the height before Monaco mounts, so the page doesn't jump much.

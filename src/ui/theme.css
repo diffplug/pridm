@@ -7,6 +7,11 @@
 @import '@primer/primitives/dist/css/functional/themes/light.css';
 @import '@primer/primitives/dist/css/functional/themes/dark.css';
 
+:root {
+  /* Sticky headers stack: a category's header, then the open file's header under it. */
+  --pridm-section-header-height: 34px;
+}
+
 html,
 body {
   margin: 0;
@@ -22,20 +27,42 @@ body {
 .pridm-file {
   border: 1px solid var(--borderColor-default);
   border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 16px;
+  /* clip, not hidden: hidden would make this a scroll container and break the sticky header */
+  overflow: clip;
+  margin-bottom: 6px;
   background: var(--bgColor-default);
+}
+
+.pridm-file[data-open='true'] {
+  margin-bottom: 16px;
 }
 
 .pridm-file-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: var(--bgColor-muted);
-  border-bottom: 1px solid var(--borderColor-default);
+  cursor: pointer;
+  user-select: none;
+  position: sticky;
+  top: var(--pridm-section-header-height);
+  z-index: 5;
   font-family: var(--fontStack-monospace);
   font-size: 12px;
+}
+
+.pridm-file[data-open='true'] > .pridm-file-header {
+  border-bottom: 1px solid var(--borderColor-default);
+}
+
+.pridm-file-header:hover .pridm-file-path {
+  text-decoration: underline;
+}
+
+.pridm-chevron {
+  color: var(--fgColor-muted);
+  width: 10px;
 }
 
 .pridm-file-path {
@@ -95,6 +122,18 @@ body {
   font-style: italic;
 }
 
+/* ─── Code diff ───────────────────────────────────────────── */
+
+/* A change shown inline on one line: a light gutter, to match its light line.
+   See markInlineChanges in CodeDiffView.tsx. */
+.margin-view-overlays > div:has(> .pridm-inline-change) > .gutter-insert {
+  background: var(--diffBlob-additionLine-bgColor);
+}
+
+.margin-view-overlays > div:has(> .pridm-inline-change) > .gutter-delete {
+  background: var(--diffBlob-deletionLine-bgColor);
+}
+
 /* ─── Markdown diff ───────────────────────────────────────── */
 
 .pridm-md {
@@ -103,15 +142,20 @@ body {
   font-family: var(--fontStack-sansSerif);
 }
 
-/* ==inserted== renders as <mark> */
+/* ==inserted== and ~~deleted~~, including inline code inside them.
+   The classes come from MarkdownDiffView's Lexical theme. */
 .pridm-md mark {
+  background: none;
+  color: inherit;
+}
+
+.pridm-md .pridm-ins {
   background: var(--diffBlob-additionWord-bgColor);
   color: var(--diffBlob-additionWord-fgColor);
   border-radius: 2px;
 }
 
-/* ~~deleted~~ gets MDXEditor's hashed strikethrough class */
-.pridm-md [class*='_strikethrough_'] {
+.pridm-md .pridm-del {
   background: var(--diffBlob-deletionWord-bgColor);
   color: var(--diffBlob-deletionWord-fgColor);
   text-decoration: line-through;
@@ -139,4 +183,182 @@ body {
 
 .pridm-md a {
   color: var(--fgColor-accent);
+}
+
+/* ─── Delta view ──────────────────────────────────────────── */
+
+.pridm-muted {
+  color: var(--fgColor-muted);
+}
+
+.pridm-attention {
+  color: var(--fgColor-attention);
+}
+
+.pridm-delta {
+  max-width: 1280px;
+}
+
+.pridm-delta-header h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.pridm-delta-total {
+  font-size: 14px;
+  font-weight: 400;
+  font-family: var(--fontStack-monospace);
+}
+
+.pridm-facts {
+  color: var(--fgColor-muted);
+  margin-bottom: 16px;
+}
+
+.pridm-facts code {
+  font-family: var(--fontStack-monospace);
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--bgColor-accent-muted);
+  color: var(--fgColor-accent);
+}
+
+.pridm-facts a {
+  color: var(--fgColor-accent);
+}
+
+.pridm-section {
+  margin-bottom: 4px;
+}
+
+.pridm-section > summary {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--bgColor-default);
+}
+
+.pridm-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pridm-section > summary:hover .pridm-section-rule {
+  border-color: var(--borderColor-emphasis);
+}
+
+.pridm-section-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--pridm-section-header-height);
+  box-sizing: border-box;
+  /* lines the +/− up with the file rows' +/− (their padding + border) */
+  padding-right: 13px;
+}
+
+/* the line from the name to the counts */
+.pridm-section-rule {
+  flex: 1;
+  border-top: 1px solid var(--borderColor-default);
+}
+
+.pridm-section-summary::before {
+  content: '▸';
+  color: var(--fgColor-muted);
+  width: 10px;
+}
+
+.pridm-section[open] .pridm-section-summary::before {
+  content: '▾';
+}
+
+.pridm-section-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.pridm-plusminus,
+.pridm-counts {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--fontStack-monospace);
+  font-size: 12px;
+}
+
+.pridm-section-body {
+  padding: 4px 0 12px;
+}
+
+
+.pridm-category-name {
+  font-family: var(--fontStack-sansSerif);
+  font-weight: 600;
+}
+
+/* ─── App and dashboard ───────────────────────────────────── */
+
+.pridm-app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 24px 64px;
+}
+
+.pridm-nav {
+  margin-bottom: 16px;
+}
+
+.pridm-logo {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fgColor-default);
+  text-decoration: none;
+}
+
+.pridm-dashboard {
+  display: flex;
+  flex-direction: column;
+}
+
+.pridm-row {
+  display: block;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borderColor-muted);
+  color: inherit;
+  text-decoration: none;
+}
+
+.pridm-row:hover .pridm-row-title {
+  color: var(--fgColor-accent);
+  text-decoration: underline;
+}
+
+.pridm-row[data-focus='muted'] {
+  opacity: 0.55;
+}
+
+.pridm-row-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pridm-row-facts {
+  color: var(--fgColor-muted);
+  font-size: 12px;
+}
+
+.pridm-row-facts code {
+  font-family: var(--fontStack-monospace);
+  font-size: 11px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--bgColor-accent-muted);
+  color: var(--fgColor-accent);
+}
+
+.pridm-row-counts {
+  margin-top: 2px;
 }

@@ -6,7 +6,7 @@ React + TypeScript, built with Vite and run with Bun. React is required because 
 
 - **Vite** serves the frontend and the `/api` routes, through a small plugin in the dev server. That's one process on one port, so one `dor ensure -- bun run dev`.
 - **The server is long-lived.** One instance serves every project and stays running in its own Dormouse pane. `dor ensure` reuses it instead of starting a second one. We don't declare it as a Dor Tool.
-- **`@monaco-editor/react`** for `DiffEditor`, with Monaco bundled from `monaco-editor` rather than the CDN it loads by default, so it works offline and in [Selfie](ui/storybook.md#selfie)'s renderer, which has no network. `src/ui/monaco.ts` sets it up: the core editor, every language's syntax colors, JSON's language service, and their workers.
+- **`@monaco-editor/react`** for `DiffEditor`, with Monaco bundled from `monaco-editor` rather than the CDN it loads by default, so it works offline and in [Selfie](ui/storybook.md#selfie)'s renderer, which has no network. `src/ui/monaco.ts` sets it up: every language, the language services' workers, and no diagnostics, since a file shown without its project can't resolve its imports.
 - **`@mdxeditor/editor`** in read-only rich-text mode for markdown.
 - **`picomatch`** for category globs.
 - **`diff`** (jsdiff) for the markdown merge.
@@ -22,28 +22,34 @@ vite.config.ts             includes the /api plugin
 .storybook/
 src/
   types.ts                 the data model, shared by server and UI
-  shared/
-    mdmerge.ts             builds the merged markdown (pure, tested)
+  shared/                  pure code, used by both the server and the UI
+    mdmerge.ts             builds the merged markdown (tested)
+    classify.ts            puts paths into categories (tested)
+    overview.ts            groups files into DeltaOverview / CategoryDiff (tested)
+    language.ts            Monaco language ids by file extension
   server/
     api.ts                 Vite plugin with the /api routes
-    exec.ts                run git / gh / dor and parse output
-    origin.ts              normalize remote URLs into RepoKeys
-    categories.ts          load categories.json, classify paths
-    state.ts               read and write ~/.pridm/state.json
-    discover.ts            worktrees + PRs → BulkDelta[]
-    surfaces.ts            dor list → SurfaceRef[] per delta
+    exec.ts                run git / gh / dor, in parallel with a limit
+    origin.ts              normalize remote URLs into RepoKeys (tested)
+    config.ts              read ~/.pridm/categories.json and state.json
+    discover.ts            local checkouts → BulkDelta[] (PRs: not yet)
+    surfaces.ts            dor list → SurfaceRef[] per delta (not yet)
     sources/
       git.ts               file list and contents from a local clone
       github.ts            file list and contents from the GitHub API
   ui/
-    App.tsx                hash routing: dashboard, delta
-    hooks.ts               fetch from /api
+    App.tsx                the dashboard and delta pages
+    route.ts               hash routing, with open categories in the URL (tested)
+    api.ts                 fetch from /api
     theme.ts               Primer setup, Monaco theme, light/dark
-    monaco.ts              Monaco from the bundle, not a CDN
+    monaco.ts              bundles the local monaco-editor and its workers
     stories.ts             dark twins, and waiting for diffs to draw
-    components/            CategoryCounts, CategorySection, CodeDiffView,
-                           MarkdownDiffView, DeltaRow, DeltaView, SurfaceChips
+    components/            CategoryCounts, CategorySection, CodeDiffView, Dashboard,
+                           DeltaRow, DeltaView, FileDiffView, MarkdownDiffView, PlusMinus
     fixtures/              typed example data for stories
+      real/self.json       pridm's own history as a delta; `bun run fixture:self`
+scripts/
+  fixture-self.ts          builds real/self.json with the server's git code
 test/
 ```
 
@@ -54,7 +60,7 @@ test/
 | `GET /api/deltas` | `DeltaSummary[]` |
 | `GET /api/deltas/:id` | `DeltaOverview` |
 | `GET /api/deltas/:id/:category` | `CategoryDiff` |
-| `PUT /api/focus/:id` | sets `pinned`, `normal`, or `muted` |
+| `PUT /api/focus/:id` | sets `pinned`, `normal`, or `muted` (not built yet) |
 
 Ids contain `/` and `:`, so they're URL-encoded.
 
