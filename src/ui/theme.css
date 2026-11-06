@@ -95,6 +95,18 @@ body {
   font-style: italic;
 }
 
+/* ─── Code diff ───────────────────────────────────────────── */
+
+/* A change shown inline on one line: a light gutter, to match its light line.
+   See markInlineChanges in CodeDiffView.tsx. */
+.margin-view-overlays > div:has(> .pridm-inline-change) > .gutter-insert {
+  background: var(--diffBlob-additionLine-bgColor);
+}
+
+.margin-view-overlays > div:has(> .pridm-inline-change) > .gutter-delete {
+  background: var(--diffBlob-deletionLine-bgColor);
+}
+
 /* ─── Markdown diff ───────────────────────────────────────── */
 
 .pridm-md {
