@@ -1,95 +1,83 @@
 # Implementation plan
 
-Written 2026-11-05, for a 2-hour hackathon.
+Started 2026-11-05 as a 2-hour hackathon. Updated 2026-11-05 after phase 4.
 
 ## The demo
 
-One real worktree opens in pridm. Its changes are split into collapsed categories, each with +/− counts. Expanding **spec** shows a rendered markdown diff with changes marked inline. Expanding **prod** shows an inline Monaco diff. The dashboard shows the Claude session working in that worktree.
+pridm's dashboard lists every change in progress across `~/projects`. One opens, split into collapsed categories, each with +/− counts. Expanding **spec** shows a rendered markdown diff with changes marked inline. Expanding **prod** shows an inline Monaco diff. The dashboard shows the Claude session working in that worktree, and puts it at the top when it's waiting on you.
 
-Everything below serves that demo. The order puts the riskiest part (markdown diff rendering) first, and keeps a working demo possible at the end of each phase.
+Everything up to the Claude session works today. The Dormouse surfaces are the last branch below.
 
-## Status
+## How we work
 
-| Phase | Status |
-| --- | --- |
-| 0. Set up the project | done |
-| 1. Diff viewers | done |
-| 2. Delta view | done |
-| 3. Server | local checkouts done; PRs and Dormouse surfaces not yet |
-| 4. Wire it up | done for local checkouts |
-| 5. Polish | not started |
+- **One branch and one PR per item below.** Never push to `main`.
+- **Every new component state gets a Storybook story**, fed by typed fixtures. See [Storybook](ui/storybook.md).
+- **Check in the real app:** screenshot it through `dor agent-browser` before opening the PR.
+- **Before every PR:** `bun test` and `tsc --noEmit` pass, and the specs are updated to match.
 
-## Phases
+## Done
 
-| # | Phase | Time | Ends with |
-| --- | --- | --- | --- |
-| 0 | Set up the project | 10 min | Vite app and Storybook both running in Dormouse panes |
-| 1 | Diff viewers | 30 min | Markdown and code diff stories that look right in light and dark |
-| 2 | Delta view | 15 min | A delta with collapsed categories, in Storybook |
-| 3 | Server | 30 min | `/api` returns real deltas from `~/projects` |
-| 4 | Wire it up | 15 min | The demo works end to end |
-| 5 | Polish | 10 min | Dashboard sorting, Dormouse surfaces, screenshots |
+| Phase | What it delivered | Where |
+| --- | --- | --- |
+| 0. Set up | Vite + React + TypeScript on Bun, Storybook 10, Primer, Monaco and MDXEditor | `main` |
+| 1. Diff viewers | Merged markdown with `~~`/`==` marks (`mdmerge.ts`); Monaco inline diffs, one-line changes on one line; Primer colors in light and dark | `main` |
+| 2. Delta view | Collapsed categories with totals; each file expands on its own; heading-with-rule headers; sticky headers; markdown counted in words (`+105w −686w`) | `main` |
+| 3–4. Live local deltas | Discovery of every checkout under `~/projects` (20 deltas from 69 folders in ~2 s); the `/api` routes; the dashboard; open categories in the URL | `main`, [PR #1](https://github.com/diffplug/pridm/pull/1) |
 
-Phases 1–2 (UI, on fixtures) and phase 3 (server) only share `src/types.ts`, so they can be built at the same time, e.g. by a second agent in its own git worktree.
+## Next
 
-### 0. Set up the project (10 min)
+In order. Each is one branch and one PR, and leaves the app working.
 
-- Vite + React + TypeScript, with Bun as the package manager.
-- Install Monaco, MDXEditor, Primer, `picomatch`, `diff`, `mdast-util-from-markdown`.
-- Set up Storybook for React + Vite, with a light/dark toggle in the toolbar.
-- Move `src/types.ts` into the layout from [Stack](stack.md#project-layout).
-- Start both in their own Dormouse panes with `dor ensure -- bun run dev` and `dor ensure -- bun run storybook`.
+### 1. Your open PRs (`feat/open-prs`, ~30 min)
 
-### 1. Diff viewers (30 min)
+See [Discovery](architecture/discovery.md#2-your-open-prs-not-built-yet).
 
-The riskiest part goes first. See [Diffs](architecture/diffs.md).
+- One `gh api graphql` query for `is:pr is:open author:@me`, returning number, title, url, author, draft, `updatedAt`, head and base refs and SHAs, and the repository.
+- Join PRs to local deltas on id (`<origin>:<branch>`). A PR's base wins over the merge-base.
+- A PR with no local checkout, whose repo is cloned under `~/projects`, becomes a PR-only delta. Its diff comes from `git fetch origin pull/<n>/head`, then the same git code as local deltas.
+- A PR whose repo isn't cloned anywhere shows on the dashboard but can't be opened yet. See [Later](#later).
+- The PR number and state show on rows and in the delta header.
+- Tests: the join, PR-only ranges. Stories: the PR states (open, draft, merged).
 
-1. `src/shared/mdmerge.ts` with unit tests: block diff, then word diff, then `~~`/`==` marks. Test cases: a word changed, a heading renamed, a list item added, a block deleted, a code block changed, a table changed.
-2. `MarkdownDiffView`: read-only MDXEditor plus CSS for the marks. Stories for every test case above.
-3. `CodeDiffView`: Monaco `DiffEditor` inline, unchanged regions folded, sized to its content, mounted when it scrolls into view. Stories: added, deleted, modified, renamed, binary, a large file.
-4. `theme.ts`: Primer variables, a Monaco theme from Primer's diff colors, light and dark.
+### 2. Pin and mute (`feat/focus`, ~15 min)
 
-**Check:** open the markdown stories with `dor agent-browser` and take screenshots in light and dark. If the marks look bad, switch to the fallback in [Diffs](architecture/diffs.md#risks) now, not later.
+- `PUT /api/focus/:id` writes `~/.pridm/state.json`.
+- Pin and mute buttons on each dashboard row and in the delta header.
+- Dashboard order: pinned, then most recent. Muted rows at the bottom, dimmed. (Surfaces that need attention slot in after pinned, in item 4.)
 
-### 2. Delta view (15 min)
+### 3. Polish (`fix/polish`, ~15 min)
 
-- `CategoryCounts`: each category's +/− as one line of text, for the dashboard.
-- `CategorySection`: `<details>` with the category name, file count, and +/−. When expanded, it shows a list of `CodeDiffView`/`MarkdownDiffView`.
-- `DeltaView`: a header (title, branch, PR, uncommitted and unpushed counts) and one section per category.
-- Fixtures and stories for each state in [Storybook](ui/storybook.md).
-
-### 3. Server (30 min)
-
-See [Discovery](architecture/discovery.md).
-
-1. `exec.ts`, `origin.ts`, `categories.ts`, `state.ts`. Unit tests for origin normalization and classification.
-2. `sources/git.ts`: file list and contents for a local worktree, including uncommitted and untracked files.
-3. `discover.ts`: worktrees under `scanRoots`, PRs from one GraphQL query, joined on id.
-4. `surfaces.ts`: `dor list --json --all` matched to deltas.
-5. `api.ts`: the four routes from [Stack](stack.md#api).
-
-**Check:** `curl` each route against your real `~/projects`.
-
-### 4. Wire it up (15 min)
-
-- `hooks.ts`: fetch summaries, an overview, and a category's diffs when it's expanded.
-- `App.tsx`: hash routing between the dashboard and a delta, with expanded categories in the URL.
-- `DeltaRow` and the dashboard list.
-- Open it with `dor agent-browser` and go through the demo.
-
-### 5. Polish (10 min)
-
-- Dashboard sorting: pinned, needs attention, most recent; muted at the bottom.
-- `SurfaceChips` on each row.
-- Pin and mute buttons.
+- **Added files:** Monaco marks the empty original's line "1" in red. Show an added file as just its new contents, all green.
+- **The delta header's total** mixes markdown and code, so it's in lines while the spec section is in words. Label it "lines", or drop it.
+- **Refresh button** on the dashboard, next to the auto-refresh when the tab gets focus.
 - Screenshots for the presentation.
 
-## If we run late, cut in this order
+### 4. Dormouse surfaces (`feat/dormouse-surfaces`, ~20 min)
 
-1. `sources/github.ts` (PRs with no local clone): show them in the dashboard, but don't allow opening them.
-2. Pin and mute, and `state.json`.
-3. Dark mode.
-4. Dormouse surfaces on the dashboard. This one's a shame to lose, because it's what makes pridm specific to Dormouse.
-5. The dashboard itself: open a single delta from a hard-coded path.
+See [Discovery](architecture/discovery.md#5-dormouse-surfaces-not-built-yet).
 
-The demo only needs phases 0–2, plus local git in phase 3, plus phase 4.
+- `src/server/surfaces.ts`: run `dor list --json --all`, and match each surface to a delta. Terminals and tools match by `cwd` (longest `local.path` wins), browsers by `url` starting with the PR's URL.
+- Fill `BulkDelta.surfaces` in `/api/deltas` and `/api/deltas/:id`.
+- `SurfaceChips`: one chip per surface ("claude", "bun run dev", "browser"). A surface that needs attention (ringing or todo) is highlighted: "claude · waiting on you".
+- Show the chips on dashboard rows and in the delta header.
+- Browsers showing a PR match its delta, using the PR URLs from item 1.
+- Dashboard order: pinned, then deltas with a surface that needs attention, then most recent.
+- Tests: surface matching (nested worktrees, the longest path wins, browsers by URL). Stories: no surfaces, several, one needing attention.
+
+## Later
+
+Not needed for the demo. Each is its own branch when we get to it.
+
+- **PRs with no local clone:** load files and contents from the GitHub API (`gh api repos/<o>/<r>/pulls/<n>/files`, the contents endpoint with the raw media type).
+- **Faster scans:** the server is long-lived, so it can cache each checkout's results until its `HEAD` or working tree changes.
+- **Worktrees outside the scan roots:** follow `git worktree list` from each clone.
+- **Load one file at a time** instead of a whole category when it's opened.
+- **Keep open files in the URL**, like open categories.
+- **Sort by last edit,** not last commit, for checkouts whose changes are uncommitted.
+
+## If we run short on time, cut in this order
+
+1. Dormouse surfaces.
+2. Polish, apart from the added-file fix.
+3. Pin and mute.
+4. PR-only deltas: keep the join, so PRs show on local deltas, but skip PRs that aren't checked out.
