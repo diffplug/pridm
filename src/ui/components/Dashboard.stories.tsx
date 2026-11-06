@@ -1,13 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { dark, waitForDiffs } from '../stories.ts';
 import { Dashboard } from './Dashboard.tsx';
 import { summaries } from '../fixtures/summaries.ts';
 
 const meta: Meta<typeof Dashboard> = {
   title: 'Dashboard/Dashboard',
   component: Dashboard,
+  play: waitForDiffs,
 };
 export default meta;
 type Story = StoryObj<typeof Dashboard>;
 
 export const Several: Story = { args: { summaries } };
 export const Empty: Story = { args: { summaries: [] } };
+
+export const SeveralDark = dark(Several);
+export const EmptyDark = dark(Empty);

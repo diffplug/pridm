@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { dark, waitForDiffs } from '../stories.ts';
 import { MarkdownDiffView } from './MarkdownDiffView.tsx';
 import { markdownCases, markdownFile, realSpec } from '../fixtures/files.ts';
 import type { MarkdownDiff } from '../../types.ts';
@@ -6,6 +7,7 @@ import type { MarkdownDiff } from '../../types.ts';
 const meta: Meta<typeof MarkdownDiffView> = {
   title: 'Diffs/MarkdownDiffView',
   component: MarkdownDiffView,
+  play: waitForDiffs,
 };
 export default meta;
 type Story = StoryObj<typeof MarkdownDiffView>;
@@ -22,3 +24,12 @@ export const BlockDeleted = story(...markdownCases.blockDeleted);
 export const CodeBlockChanged = story(...markdownCases.codeBlockChanged);
 export const TableChanged = story(...markdownCases.tableChanged);
 export const Formatting = story(...markdownCases.formatting);
+
+export const RealSpecDark = dark(RealSpec);
+export const WordChangedDark = dark(WordChanged);
+export const HeadingRenamedDark = dark(HeadingRenamed);
+export const ListItemAddedDark = dark(ListItemAdded);
+export const BlockDeletedDark = dark(BlockDeleted);
+export const CodeBlockChangedDark = dark(CodeBlockChanged);
+export const TableChangedDark = dark(TableChanged);
+export const FormattingDark = dark(Formatting);

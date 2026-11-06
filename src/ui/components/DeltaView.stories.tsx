@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { dark, waitForDiffs } from '../stories.ts';
 import type { Category, CategoryDiff } from '../../types.ts';
 import { DeltaView } from './DeltaView.tsx';
 import { customCategories, empty, localAndPr, neverPushed, prOnly, selfDelta, type DeltaFixture } from '../fixtures/deltas.ts';
@@ -23,6 +24,7 @@ function Interactive({ fixture, initiallyOpen = [], neverLoad = false }: { fixtu
 const meta: Meta<typeof Interactive> = {
   title: 'Delta/DeltaView',
   component: Interactive,
+  play: waitForDiffs,
 };
 export default meta;
 type Story = StoryObj<typeof Interactive>;
@@ -35,3 +37,12 @@ export const PrOnly: Story = { args: { fixture: prOnly } };
 export const LocalAndPr: Story = { args: { fixture: localAndPr } };
 export const NeverPushed: Story = { args: { fixture: neverPushed } };
 export const Empty: Story = { args: { fixture: empty } };
+
+export const SelfReviewDark = dark(SelfReview);
+export const SpecAndTestOpenDark = dark(SpecAndTestOpen);
+export const LoadingDark = dark(Loading);
+export const CustomCategoriesDark = dark(CustomCategories);
+export const PrOnlyDark = dark(PrOnly);
+export const LocalAndPrDark = dark(LocalAndPr);
+export const NeverPushedDark = dark(NeverPushed);
+export const EmptyDark = dark(Empty);

@@ -13,6 +13,7 @@
         "mdast-util-from-markdown": "^2.1.0",
         "mdast-util-gfm-table": "^2.0.1",
         "micromark-extension-gfm-table": "^2.1.2",
+        "monaco-editor": "0.57.0",
         "picomatch": "^4.0.7",
         "react": "^19.3.1",
         "react-dom": "^19.3.1",

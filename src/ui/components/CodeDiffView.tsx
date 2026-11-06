@@ -11,10 +11,15 @@ const MIN_HEIGHT = 3 * LINE_HEIGHT;
 // Monaco's DiffEditor, shown inline with unchanged regions folded. A change
 // within a single line stays on one line, instead of a deleted line + an added one.
 // It mounts only once it scrolls near the screen, and sizes itself to its content.
+//
+// It's marked `data-diff-pending` until it has measured whether it's near the screen, and, if it is,
+// until the diff is drawn with its syntax colors. Stories wait for that before a screenshot.
 export function CodeDiffView({ diff }: { diff: CodeDiff }) {
   const dark = useIsDark();
   const monaco = useMonaco();
-  const [ref, visible] = useNearScreen<HTMLDivElement>();
+  const [ref, near] = useNearScreen<HTMLDivElement>();
+  const tokenizerReady = useTokenizer(monaco, diff.language);
+  const [drawn, setDrawn] = useState(false);
   const [height, setHeight] = useState(() => estimateHeight(diff));
 
   // Re-read Primer's colors whenever light/dark changes.
@@ -28,11 +33,19 @@ export function CodeDiffView({ diff }: { diff: CodeDiff }) {
     modified.onDidContentSizeChange(resize);
     resize();
     markInlineChanges(ed);
+    // Color every line now, before the diff comes back from its worker. Otherwise the deleted lines,
+    // which come from the hidden original editor, can paint before they're colored.
+    for (const model of [ed.getOriginalEditor().getModel(), modified.getModel()]) {
+      if (model) forceTokenization(model);
+    }
+    ed.onDidUpdateDiff(() => setDrawn(true));
+    if (ed.getLineChanges() !== null) setDrawn(true);
   };
 
+  const pending = near === null || (near && !drawn);
   return (
-    <div ref={ref} style={{ height }}>
-      {visible && (
+    <div ref={ref} style={{ height }} data-diff-pending={pending || undefined}>
+      {near && tokenizerReady && (
         <DiffEditor
           original={diff.original}
           modified={diff.modified}
@@ -109,20 +122,41 @@ function estimateHeight(diff: CodeDiff): number {
   return Math.max(MIN_HEIGHT, Math.min(lines, 30) * LINE_HEIGHT);
 }
 
-// True once the element comes within a screen's height of the viewport. Stays true.
-function useNearScreen<T extends Element>(): [React.RefObject<T | null>, boolean] {
+// Null until first measured, then true once the element comes within a screen's height of the viewport. Stays true.
+function useNearScreen<T extends Element>(): [React.RefObject<T | null>, boolean | null] {
   const ref = useRef<T>(null);
-  const [visible, setVisible] = useState(false);
+  const [near, setNear] = useState<boolean | null>(null);
   useEffect(() => {
-    if (visible || !ref.current) return;
+    if (near || !ref.current) return;
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) setVisible(true);
-      },
+      (entries) => setNear(entries.some((e) => e.isIntersecting)),
       { rootMargin: '100% 0px' },
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [visible]);
-  return [ref, visible];
+  }, [near]);
+  return [ref, near];
+}
+
+// True once Monaco has loaded the syntax colors for a language, which each load lazily.
+// An unknown language is ready at once, as plain text.
+function useTokenizer(monaco: Monaco | null, language: string): boolean {
+  const [readyFor, setReadyFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!monaco) return;
+    let live = true;
+    const done = () => live && setReadyFor(language);
+    monaco.editor.colorize('', language, {}).then(done, done);
+    return () => {
+      live = false;
+    };
+  }, [monaco, language]);
+  return readyFor === language;
+}
+
+// Monaco's models can tokenize every line at once, though only internally. Without it, lines are
+// colored in the background, which is just later.
+function forceTokenization(model: editor.ITextModel) {
+  const tokenization = (model as unknown as { tokenization?: { forceTokenization?(lineNumber: number): void } }).tokenization;
+  tokenization?.forceTokenization?.(model.getLineCount());
 }

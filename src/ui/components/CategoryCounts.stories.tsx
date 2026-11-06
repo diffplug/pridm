@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { dark, waitForDiffs } from '../stories.ts';
 import { CategoryCounts } from './CategoryCounts.tsx';
 import { customCategories, selfDelta } from '../fixtures/deltas.ts';
 
 const meta: Meta<typeof CategoryCounts> = {
   title: 'Delta/CategoryCounts',
   component: CategoryCounts,
+  play: waitForDiffs,
 };
 export default meta;
 type Story = StoryObj<typeof CategoryCounts>;
@@ -15,3 +17,8 @@ export const Default: Story = { args: { categories: stats } };
 export const SingleCategory: Story = { args: { categories: stats.slice(0, 1) } };
 export const Custom: Story = { args: { categories: customCategories.overview.categories.map(({ files: _, ...s }) => s) } };
 export const Empty: Story = { args: { categories: [] } };
+
+export const DefaultDark = dark(Default);
+export const SingleCategoryDark = dark(SingleCategory);
+export const CustomDark = dark(Custom);
+export const EmptyDark = dark(Empty);
