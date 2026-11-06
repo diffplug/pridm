@@ -37,7 +37,7 @@ function DeltaHeader({ overview }: { overview: DeltaOverview }) {
   const deletions = categories.reduce((n, c) => n + c.deletions, 0);
 
   const facts: React.ReactNode[] = [];
-  if (delta.branch) facts.push(<code key="branch">{delta.branch}</code>);
+  if (delta.branch && delta.branch !== delta.title) facts.push(<code key="branch">{delta.branch}</code>);
   facts.push(<span key="repo">{delta.repo}</span>);
   if (pr)
     facts.push(

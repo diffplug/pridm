@@ -29,22 +29,22 @@ src/
     language.ts            Monaco language ids by file extension
   server/
     api.ts                 Vite plugin with the /api routes
-    exec.ts                run git / gh / dor and parse output
-    origin.ts              normalize remote URLs into RepoKeys
-    categories.ts          load categories.json
-    state.ts               read and write ~/.pridm/state.json
-    discover.ts            worktrees + PRs → BulkDelta[]
-    surfaces.ts            dor list → SurfaceRef[] per delta
+    exec.ts                run git / gh / dor, in parallel with a limit
+    origin.ts              normalize remote URLs into RepoKeys (tested)
+    config.ts              read ~/.pridm/categories.json and state.json
+    discover.ts            local checkouts → BulkDelta[] (PRs: not yet)
+    surfaces.ts            dor list → SurfaceRef[] per delta (not yet)
     sources/
       git.ts               file list and contents from a local clone
       github.ts            file list and contents from the GitHub API
   ui/
-    App.tsx                hash routing: dashboard, delta
-    hooks.ts               fetch from /api
+    App.tsx                the dashboard and delta pages
+    route.ts               hash routing, with open categories in the URL (tested)
+    api.ts                 fetch from /api
     theme.ts               Primer setup, Monaco theme, light/dark
     monaco.ts              bundles the local monaco-editor and its workers
-    components/            CategoryCounts, CategorySection, CodeDiffView, FileDiffView,
-                           MarkdownDiffView, DeltaRow, DeltaView, SurfaceChips
+    components/            CategoryCounts, CategorySection, CodeDiffView, Dashboard,
+                           DeltaRow, DeltaView, FileDiffView, MarkdownDiffView, PlusMinus
     fixtures/              typed example data for stories
       real/self.json       pridm's own history as a delta; `bun run fixture:self`
 scripts/
@@ -59,7 +59,7 @@ test/
 | `GET /api/deltas` | `DeltaSummary[]` |
 | `GET /api/deltas/:id` | `DeltaOverview` |
 | `GET /api/deltas/:id/:category` | `CategoryDiff` |
-| `PUT /api/focus/:id` | sets `pinned`, `normal`, or `muted` |
+| `PUT /api/focus/:id` | sets `pinned`, `normal`, or `muted` (not built yet) |
 
 Ids contain `/` and `:`, so they're URL-encoded.
 

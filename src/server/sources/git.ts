@@ -4,13 +4,13 @@
 // With a `head`, compares two commits. Without one, compares `base` with the
 // working tree, including uncommitted edits and files git doesn't track yet.
 
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { CategoryGlobs, FileChange, FileStat, FileStatus } from '../../types.ts';
+import type { CategoryGlobs, FileChange, FileStat, FileStatus, WordCounts } from '../../types.ts';
 import { classifier } from '../../shared/classify.ts';
 import { isMarkdown, languageOf } from '../../shared/language.ts';
 import { mergeMarkdown } from '../../shared/mdmerge.ts';
-import { wordCounts } from '../../shared/words.ts';
+import { words } from '../../shared/words.ts';
 import { git } from '../exec.ts';
 
 export interface Range {
@@ -19,17 +19,25 @@ export interface Range {
   head?: string;  // undefined = the working tree
 }
 
-export function fileStats(range: Range, globs: CategoryGlobs): FileStat[] {
+export async function fileStats(range: Range, globs: CategoryGlobs): Promise<FileStat[]> {
   const { cwd, base, head } = range;
   const revs = head ? [base, head] : [base];
   const classify = classifier(globs);
 
-  const counts = parseNumstat(git(cwd, ['diff', '--numstat', '-z', '-M', ...revs]));
-  const committed = head ? null : new Set(split(git(cwd, ['diff', '--name-only', '-z', '-M', base, 'HEAD'])));
+  const [numstat, nameStatus, committedOut, untrackedOut, wordDiff] = await Promise.all([
+    git(cwd, ['diff', '--numstat', '-z', '-M', ...revs]),
+    git(cwd, ['diff', '--name-status', '-z', '-M', ...revs]),
+    head ? Promise.resolve(null) : git(cwd, ['diff', '--name-only', '-z', '-M', base, 'HEAD']),
+    head ? Promise.resolve('') : git(cwd, ['ls-files', '--others', '--exclude-standard', '-z']),
+    git(cwd, ['diff', '--word-diff=porcelain', '--word-diff-regex=[^[:space:]]+', '-M', '--unified=0', ...revs, '--', '*.md', '*.mdx']),
+  ]);
+  const counts = parseNumstat(numstat);
+  const committed = committedOut === null ? null : new Set(split(committedOut));
+  const wordCounts = parseWordDiff(wordDiff);
 
-  const stats: FileStat[] = parseNameStatus(git(cwd, ['diff', '--name-status', '-z', '-M', ...revs])).map((f) => {
+  const stats: FileStat[] = parseNameStatus(nameStatus).map((f) => {
     const c = counts.get(f.path);
-    return {
+    const stat: FileStat = {
       ...f,
       category: classify(f.status === 'deleted' ? (f.oldPath ?? f.path) : f.path),
       additions: c?.additions ?? 0,
@@ -37,52 +45,49 @@ export function fileStats(range: Range, globs: CategoryGlobs): FileStat[] {
       isBinary: c?.isBinary ?? false,
       committed: committed ? committed.has(f.path) : true,
     };
+    if (isMarkdown(f.path) && !stat.isBinary) stat.words = wordCounts.get(f.path) ?? { added: 0, removed: 0 };
+    return stat;
   });
 
-  if (!head) {
-    for (const path of split(git(cwd, ['ls-files', '--others', '--exclude-standard', '-z']))) {
-      const text = readFileSync(join(cwd, path));
-      const isBinary = text.includes(0);
-      stats.push({
+  const untracked = await Promise.all(
+    split(untrackedOut).map(async (path): Promise<FileStat> => {
+      const bytes = await readFile(join(cwd, path)).catch(() => Buffer.alloc(0));
+      const isBinary = bytes.includes(0);
+      const text = isBinary ? '' : bytes.toString('utf8');
+      return {
         path,
         status: 'added',
         category: classify(path),
-        additions: isBinary ? 0 : text.toString('utf8').split('\n').length,
+        additions: text ? text.split('\n').length : 0,
         deletions: 0,
         isBinary,
         committed: false,
-      });
-    }
-  }
-  // Markdown files are also counted in words. That means reading them, but
-  // they're small, and the UI shows words for them instead of lines.
-  for (const stat of stats) {
-    if (!stat.isBinary && isMarkdown(stat.path)) {
-      const { original, modified } = contents(range, stat);
-      stat.words = wordCounts(original, modified);
-    }
-  }
-  return stats.sort((a, b) => a.path.localeCompare(b.path));
+        ...(isMarkdown(path) && !isBinary && { words: { added: words(text).length, removed: 0 } }),
+      };
+    }),
+  );
+  return [...stats, ...untracked].sort((a, b) => a.path.localeCompare(b.path));
 }
 
-function contents(range: Range, stat: FileStat): { original: string; modified: string } {
+async function contents(range: Range, stat: FileStat): Promise<{ original: string; modified: string }> {
   const { cwd, base, head } = range;
   const show = (rev: string, path: string) => git(cwd, ['show', `${rev}:${path}`]);
-  const original = stat.isBinary || stat.status === 'added' ? '' : show(base, stat.oldPath ?? stat.path);
-  const modified =
-    stat.isBinary || stat.status === 'deleted' ? '' : head ? show(head, stat.path) : readFileSync(join(cwd, stat.path), 'utf8');
+  const [original, modified] = await Promise.all([
+    stat.isBinary || stat.status === 'added' ? '' : show(base, stat.oldPath ?? stat.path),
+    stat.isBinary || stat.status === 'deleted' ? '' : head ? show(head, stat.path) : readFile(join(cwd, stat.path), 'utf8'),
+  ]);
   return { original, modified };
 }
 
-export function fileChange(range: Range, stat: FileStat): FileChange {
-  const { original, modified } = contents(range, stat);
+export async function fileChange(range: Range, stat: FileStat): Promise<FileChange> {
+  const { original, modified } = await contents(range, stat);
   if (isMarkdown(stat.path)) {
     return { ...stat, diff: { kind: 'markdown', original, modified, merged: mergeMarkdown(original, modified) } };
   }
   return { ...stat, diff: { kind: 'code', language: languageOf(stat.path), original, modified } };
 }
 
-// ─── Parsing git's -z output ─────────────────────────────────
+// ─── Parsing git's output ────────────────────────────────────
 
 function split(out: string): string[] {
   return out.split('\0').filter((s) => s !== '');
@@ -120,6 +125,37 @@ function parseNumstat(out: string): Map<string, { additions: number; deletions: 
       i += 2;
     }
     counts.set(newPath, { additions: Number(add) || 0, deletions: Number(del) || 0, isBinary: add === '-' });
+  }
+  return counts;
+}
+
+// `git diff --word-diff=porcelain`: per file, a header ("diff --git", "---",
+// "+++", ...) then hunks whose lines start with " " (same), "-" (removed),
+// "+" (added), or "~" (end of a line). Words are counted the same way the UI
+// counts them, so markdown syntax on its own doesn't count.
+export function parseWordDiff(out: string): Map<string, WordCounts> {
+  const counts = new Map<string, WordCounts>();
+  let current: WordCounts | null = null;
+  let inHeader = false;
+  let oldPath = '';
+  for (const line of out.split('\n')) {
+    if (line.startsWith('diff --git ')) {
+      inHeader = true;
+      current = null;
+      continue;
+    }
+    if (inHeader) {
+      if (line.startsWith('--- ')) oldPath = line.slice(4).replace(/^a\//, '');
+      else if (line.startsWith('+++ ')) {
+        const path = line.slice(4) === '/dev/null' ? oldPath : line.slice(4).replace(/^b\//, '');
+        current = { added: 0, removed: 0 };
+        counts.set(path, current);
+      } else if (line.startsWith('@@')) inHeader = false;
+      continue;
+    }
+    if (!current) continue;
+    if (line[0] === '+') current.added += words(line.slice(1)).length;
+    else if (line[0] === '-') current.removed += words(line.slice(1)).length;
   }
   return counts;
 }

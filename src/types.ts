@@ -39,6 +39,7 @@ interface LocalCheckout {
   headSha: string;
   uncommitted: { staged: number; unstaged: number; untracked: number };
   upstream: { ref: string; ahead: number; behind: number } | null; // null = never pushed
+  updatedAt: string;         // ISO time of the last commit
 }
 
 // ─── GitHub ──────────────────────────────────────────────────
