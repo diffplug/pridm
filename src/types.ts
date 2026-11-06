@@ -1,4 +1,4 @@
-// Prism: data model.
+// pridm: data model.
 //
 // The root type is BulkDelta: a set of changes on a branch compared with its base.
 // It may exist only locally (a worktree with commits or edits), only as a PR
@@ -21,12 +21,15 @@ interface BulkDelta {
   source: 'local' | 'pr';    // where the diff comes from: local if checked out, else the PR head
 }
 
-// "owner/repo:branch" when the repo has a GitHub remote, else "/abs/path/to/clone:branch".
+// "<repoKey>:<branch>", e.g. "github.com/diffplug/spotless:feat/x".
 // Detached HEAD uses "<repoKey>@<worktree path>".
 // Known gap: PRs from two forks with the same branch name collide. Fine for "my PRs".
 type DeltaId = string;
 
-// "owner/repo", or the absolute path of the main clone when there is no GitHub remote
+// The normalized origin remote: host + path, no scheme, user, or ".git".
+//   git@github.com:diffplug/spotless.git      -> "github.com/diffplug/spotless"
+//   https://github.com/diffplug/spotless.git  -> "github.com/diffplug/spotless"
+// A clone with no origin uses "file:<absolute path of the main clone>".
 type RepoKey = string;
 
 // ─── Local ───────────────────────────────────────────────────
@@ -65,29 +68,53 @@ interface SurfaceRef {
   matchedBy: 'cwd' | 'url';  // cwd inside local.path (longest match wins), or url starts with pr.url
 }
 
-// ─── Summary (dashboard) and detail (one delta) ──────────────
+// ─── What the UI loads ───────────────────────────────────────
+//
+// Three levels, each loaded only when needed:
+//   1. DeltaSummary[]  the dashboard: per-category +/- for every delta
+//   2. DeltaOverview   one delta: every category collapsed, showing +/- and its file list
+//   3. CategoryDiff    loaded when you expand a category. This is the expensive
+//                      part: both full versions of every file.
+// Numbers come from `git diff --numstat`. Markdown files count source lines,
+// even though they are displayed rendered.
 
-type Category = 'spec' | 'prod' | 'test' | 'other';
+// Category names are defined in categories.json. OTHER is the only built-in one.
+type Category = string;
+const OTHER: Category = 'other';
+
 type Focus = 'pinned' | 'normal' | 'muted';
 
-type CategoryStats = Record<Category, { files: number; additions: number; deletions: number }>;
+// Lists of these are in section order: the origin's order in categories.json,
+// with OTHER last. Categories with no changed files are left out.
+interface CategoryStat {
+  category: Category;
+  fileCount: number;
+  additions: number;
+  deletions: number;
+}
 
 interface DeltaSummary {
   delta: BulkDelta;
   focus: Focus;
-  stats: CategoryStats;
+  categories: CategoryStat[];
 }
 
-interface DeltaDetail {
+interface DeltaOverview {
   delta: BulkDelta;
-  files: Record<Category, FileChange[]>;
+  categories: (CategoryStat & { files: FileStat[] })[]; // shown in each collapsed header
+}
+
+interface CategoryDiff {
+  deltaId: DeltaId;
+  category: Category;
+  files: FileChange[];
 }
 
 // ─── File changes ────────────────────────────────────────────
 
 type FileStatus = 'added' | 'modified' | 'deleted' | 'renamed';
 
-interface FileChange {
+interface FileStat {
   path: string;
   oldPath?: string;          // set when the file was renamed
   status: FileStatus;
@@ -96,76 +123,67 @@ interface FileChange {
   deletions: number;
   isBinary: boolean;
   committed: boolean;        // false = only in the working tree (local source only)
+}
+
+interface FileChange extends FileStat {
   diff: CodeDiff | MarkdownDiff;
 }
 
+// Monaco's DiffEditor computes the diff itself and wants both full versions.
+// Shown inline (renderSideBySide: false), with unchanged regions folded.
 interface CodeDiff {
   kind: 'code';
-  hunks: Hunk[];
+  language: string;          // Monaco language id, from the file extension
+  original: string;          // '' for an added file
+  modified: string;          // '' for a deleted file
 }
 
-interface Hunk {
-  header: string;            // "@@ -10,7 +10,9 @@ function foo()"
-  lines: DiffLine[];
-}
-
-interface DiffLine {
-  type: 'context' | 'add' | 'del';
-  oldNo?: number;
-  newNo?: number;
-  text: string;
-  spans?: { start: number; end: number }[]; // word-level highlights
-}
-
-// The diff is computed per markdown block, then per word inside blocks that
-// changed, so <ins>/<del> tags can't break markdown syntax.
+// Shown in a read-only MDXEditor in rich-text mode. `merged` is one markdown
+// document with deletions as ~~strikethrough~~ and insertions as ==highlight==,
+// which MDXEditor's core plugin already renders. CSS colors them red and green.
+// It is built on the server: blocks are diffed first, then words inside blocks
+// that changed. A changed code block or table can't hold inline marks, so it
+// appears twice, old then new.
 interface MarkdownDiff {
   kind: 'markdown';
-  blocks: MdBlock[];
+  original: string;
+  modified: string;
+  merged: string;
 }
-
-type MdBlock =
-  | { op: 'equal'; source: string }
-  | { op: 'insert'; source: string }
-  | { op: 'delete'; source: string }
-  | {
-      op: 'modify';
-      oldSource: string;
-      newSource: string;
-      tokens: { op: 'equal' | 'insert' | 'delete'; text: string }[];
-    };
 
 // ─── Classification ──────────────────────────────────────────
 
-// Checked in order; the first match wins.
-interface CategoryRule {
-  category: Category;
-  globs: string[];
-}
+// Category globs for one origin, matched against the file's path (the old path
+// for deleted files). Keys are any category names you like, checked in the order
+// they are written; the first category with a matching glob wins. A file that
+// matches nothing is OTHER. OTHER may also be listed, to claim files before a
+// later, broader category does.
+type CategoryGlobs = Record<Category, string[]>;
 
-const DEFAULT_RULES: CategoryRule[] = [
-  { category: 'test', globs: ['**/test/**', '**/tests/**', '**/__tests__/**', '**/*.test.*', '**/*.spec.{ts,tsx,js,jsx}', '**/*_test.go', '**/test_*.py', '**/src/test/**'] },
-  { category: 'spec', globs: ['docs/**', 'specs/**', 'rfcs/**', '**/*.md', '**/*.mdx'] },
-  { category: 'other', globs: ['**/*.lock', '**/package-lock.json', '.github/**', '**/*.{yml,yaml,toml,json}', '**/.*'] },
-  { category: 'prod', globs: ['**/*.{ts,tsx,js,jsx,go,py,java,kt,rs,rb,swift,c,cpp,h}'] },
-];
-const FALLBACK_CATEGORY: Category = 'other';
+// Keyed by origin. An origin's entry replaces "*" entirely; the two are not merged.
+// Saved in ~/.pridm/categories.json, which is meant to be edited by hand.
+type CategoryConfig = { '*': CategoryGlobs } & Record<RepoKey, CategoryGlobs>;
 
-// ─── Saved state (~/.prism/state.json) ───────────────────────
+const DEFAULT_CATEGORIES: CategoryConfig = {
+  '*': {
+    test: ['**/test/**', '**/tests/**', '**/__tests__/**', '**/*.test.*', '**/*.spec.{ts,tsx,js,jsx}', '**/*_test.go', '**/test_*.py'],
+    spec: ['**/spec/**', '**/specs/**', 'docs/**', 'rfcs/**', '**/*.md', '**/*.mdx'],
+    prod: ['**/*.{ts,tsx,js,jsx,go,py,java,kt,rs,rb,swift,c,cpp,h}'],
+  },
+};
 
-interface PrismState {
+// ─── Saved state (~/.pridm/state.json), written by pridm ──
+
+interface PridmState {
   focus: Record<DeltaId, Focus>;
-  rulesByRepo: Record<RepoKey, CategoryRule[]>;
-  categoryOrder: Category[];
-  collapsedByDefault: Category[];
   scanRoots: string[];       // e.g. ['~/projects']
 }
 
 export {
-  DEFAULT_RULES,
-  FALLBACK_CATEGORY,
+  DEFAULT_CATEGORIES,
+  OTHER,
   type BulkDelta, type DeltaId, type RepoKey, type LocalCheckout, type PullRequest,
-  type SurfaceRef, type Category, type Focus, type CategoryStats, type DeltaSummary,
-  type DeltaDetail, type FileStatus, type FileChange, type CodeDiff, type Hunk,
-  type DiffLine, type MarkdownDiff, type MdBlock, type CategoryRule, type PrismState,
+  type SurfaceRef, type Category, type Focus, type CategoryStat, type DeltaSummary,
+  type DeltaOverview, type CategoryDiff, type FileStatus, type FileStat, type FileChange,
+  type CodeDiff, type MarkdownDiff, type CategoryGlobs, type CategoryConfig, type PridmState,
 };
