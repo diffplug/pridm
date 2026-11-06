@@ -7,7 +7,7 @@ This works because components only take data as props, and fetching happens in a
 ## States to cover
 
 - **Dashboard row:** local only, PR only, both; uncommitted changes; local commits not pushed; pinned and muted; a surface that needs attention; one category empty.
-- **Category bar:** the default categories, a single category, a custom category, many categories, an empty delta.
+- **Category counts:** the default categories, a single category, a custom category, many categories, an empty delta.
 - **Category section:** collapsed and expanded; a custom category.
 - **Code diff:** added, deleted, modified, renamed, binary, a large file.
 - **Markdown diff:** a word changed in a paragraph, a heading renamed, a list item added, a block deleted, a code block changed, a table changed.

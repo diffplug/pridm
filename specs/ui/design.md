@@ -15,17 +15,9 @@ By default Monaco and MDXEditor each have their own idea of what "added" and "re
 
 So a deletion looks the same in code and in a spec. Monaco (`vs`/`vs-dark`) and MDXEditor (its `dark-theme` class) switch to dark together with Primer.
 
-## Category colors
+## Categories
 
-| Category | Color |
-| --- | --- |
-| spec | violet |
-| prod | blue |
-| test | amber |
-| other | gray |
-| anything else | picked from a palette of teal, pink, orange, indigo, ... by a hash of the name |
+Categories have no colors. Red and green are kept for removed and added, and categories are told apart by their names.
 
-None of these are red or green, which mean removed and added. Hashing the name means a category you define has the same color in every repo.
-
-- Each category section has a thin strip of its color on the left.
-- Each dashboard row has a bar split by category, like GitHub's language bar on a repo page. You can tell at a glance that one change is mostly spec and another is mostly tests.
+- A category section's header is its name, file count, and +/−.
+- A dashboard row lists each category's +/− as text: `spec +120 −14 · prod +88 −31 · test +40 −2`.

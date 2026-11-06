@@ -15,18 +15,18 @@ Every category is shown as an inline diff. Markdown is **rendered**, with insert
 
 priδm runs inside Dormouse and shows which Dormouse panes (agents, dev servers, browsers) are working on each change.
 
-## Docs
+## Specs
 
-- [**Implementation plan**](docs/plan.md): phases, time boxes, and what to cut if we run late
+- [**Implementation plan**](specs/plan.md): phases, time boxes, and what to cut if we run late
 - **Architecture**
-  - [Data model](docs/architecture/model.md): `BulkDelta`, ids, local vs. PR
-  - [Categories](docs/architecture/categories.md): glob rules keyed by origin
-  - [Discovery](docs/architecture/discovery.md): finding worktrees, PRs, and Dormouse surfaces
-  - [Diffs](docs/architecture/diffs.md): Monaco for code, a merged document in MDXEditor for markdown
+  - [Data model](specs/architecture/model.md): `BulkDelta`, ids, local vs. PR
+  - [Categories](specs/architecture/categories.md): glob rules keyed by origin
+  - [Discovery](specs/architecture/discovery.md): finding worktrees, PRs, and Dormouse surfaces
+  - [Diffs](specs/architecture/diffs.md): Monaco for code, a merged document in MDXEditor for markdown
 - **UI**
-  - [Viewing a delta](docs/ui/viewing.md): collapsed categories and what loads when
-  - [Design](docs/ui/design.md): Primer and the category colors
-  - [Storybook](docs/ui/storybook.md): every component in every state
-- [Stack](docs/stack.md): libraries, project layout, pitfalls
+  - [Viewing a delta](specs/ui/viewing.md): collapsed categories and what loads when
+  - [Design](specs/ui/design.md): Primer, and one set of diff colors for code and markdown
+  - [Storybook](specs/ui/storybook.md): every component in every state
+- [Stack](specs/stack.md): libraries, project layout, pitfalls
 
 The types everything is built on are in [`src/types.ts`](src/types.ts).

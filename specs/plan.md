@@ -27,8 +27,7 @@ Phases 1–2 (UI, on fixtures) and phase 3 (server) only share `src/types.ts`, s
 - Install Monaco, MDXEditor, Primer, `picomatch`, `diff`, `mdast-util-from-markdown`.
 - Set up Storybook for React + Vite, with a light/dark toggle in the toolbar.
 - Move `src/types.ts` into the layout from [Stack](stack.md#project-layout).
-- Add `dormouse.yml` with two Tools: `pridm` (`bun run dev`) and `storybook` (`bun run storybook`). You'll need to approve the file in Dormouse.
-- Start both with `dor tool`.
+- Start both in their own Dormouse panes with `dor ensure -- bun run dev` and `dor ensure -- bun run storybook`.
 
 ### 1. Diff viewers (30 min)
 
@@ -43,8 +42,8 @@ The riskiest part goes first. See [Diffs](architecture/diffs.md).
 
 ### 2. Delta view (15 min)
 
-- `CategoryBar`: the bar split by category colors.
-- `CategorySection`: `<details>` with the color strip, file count, and +/−. When expanded, it shows a list of `CodeDiffView`/`MarkdownDiffView`.
+- `CategoryCounts`: each category's +/− as one line of text, for the dashboard.
+- `CategorySection`: `<details>` with the category name, file count, and +/−. When expanded, it shows a list of `CodeDiffView`/`MarkdownDiffView`.
 - `DeltaView`: a header (title, branch, PR, uncommitted and unpushed counts) and one section per category.
 - Fixtures and stories for each state in [Storybook](ui/storybook.md).
 

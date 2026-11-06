@@ -33,7 +33,7 @@ Markdown line counts are source lines, even though the diff is displayed rendere
 One row per delta, sorted by: pinned first, then deltas with a surface that needs attention, then most recently updated. Muted deltas go to the bottom. Each row shows:
 
 - the title, branch, and PR number if there is one
-- a bar split by category (see [Design](design.md))
+- each category's +/−, e.g. `spec +120 −14 · prod +88 −31`
 - uncommitted and unpushed counts
 - the Dormouse surfaces working on it, e.g. "claude (waiting on you) · npm run dev · browser"
 - buttons to pin or mute

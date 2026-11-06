@@ -5,6 +5,7 @@ React + TypeScript, built with Vite and run with Bun. React is required because 
 ## Libraries
 
 - **Vite** serves the frontend and the `/api` routes, through a small plugin in the dev server. That's one process on one port, so one `dor ensure -- bun run dev`.
+- **The server is long-lived.** One instance serves every project and stays running in its own Dormouse pane. `dor ensure` reuses it instead of starting a second one. We don't declare it as a Dor Tool.
 - **`@monaco-editor/react`** for `DiffEditor`. It loads Monaco from a CDN by default, so there's no worker setup.
 - **`@mdxeditor/editor`** in read-only rich-text mode for markdown.
 - **`picomatch`** for category globs.
@@ -17,7 +18,6 @@ React + TypeScript, built with Vite and run with Bun. React is required because 
 ## Project layout
 
 ```
-dormouse.yml               Dormouse Tools: the app and Storybook
 vite.config.ts             includes the /api plugin
 .storybook/
 src/
@@ -39,7 +39,7 @@ src/
     App.tsx                hash routing: dashboard, delta
     hooks.ts               fetch from /api
     theme.ts               Primer setup, Monaco theme, light/dark
-    components/            CategoryBar, CategorySection, CodeDiffView,
+    components/            CategoryCounts, CategorySection, CodeDiffView,
                            MarkdownDiffView, DeltaRow, DeltaView, SurfaceChips
     fixtures/              typed example data for stories
 test/
