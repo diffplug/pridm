@@ -1,0 +1,38 @@
+{
+  "name": "pridm",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@mdxeditor/editor": "^4.5.0",
+    "@monaco-editor/react": "^4.7.0",
+    "@primer/octicons-react": "^19.42.0",
+    "@primer/primitives": "^11.10.0",
+    "diff": "^9.0.0",
+    "mdast-util-from-markdown": "^2.1.0",
+    "mdast-util-gfm-table": "^2.0.1",
+    "micromark-extension-gfm-table": "^2.1.2",
+    "picomatch": "^4.0.7",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@storybook/react-vite": "^10.6.6",
+    "@types/bun": "^1.4.4",
+    "@types/mdast": "^4.0.4",
+    "@types/picomatch": "^4.0.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "storybook": "^10.6.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6"
+  }
+}

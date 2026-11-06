@@ -1,0 +1,142 @@
+@import '@primer/primitives/dist/css/base/size/size.css';
+@import '@primer/primitives/dist/css/base/typography/typography.css';
+@import '@primer/primitives/dist/css/functional/size/size.css';
+@import '@primer/primitives/dist/css/functional/size/border.css';
+@import '@primer/primitives/dist/css/functional/size/radius.css';
+@import '@primer/primitives/dist/css/functional/typography/typography.css';
+@import '@primer/primitives/dist/css/functional/themes/light.css';
+@import '@primer/primitives/dist/css/functional/themes/dark.css';
+
+html,
+body {
+  margin: 0;
+  background: var(--bgColor-default);
+  color: var(--fgColor-default);
+  font-family: var(--fontStack-sansSerif);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ─── File diff ───────────────────────────────────────────── */
+
+.pridm-file {
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: var(--bgColor-default);
+}
+
+.pridm-file-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bgColor-muted);
+  border-bottom: 1px solid var(--borderColor-default);
+  font-family: var(--fontStack-monospace);
+  font-size: 12px;
+}
+
+.pridm-file-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pridm-file-path .old {
+  color: var(--fgColor-muted);
+}
+
+.pridm-status {
+  font-family: var(--fontStack-sansSerif);
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--borderColor-default);
+  color: var(--fgColor-muted);
+}
+
+.pridm-additions {
+  color: var(--fgColor-success);
+}
+
+.pridm-deletions {
+  color: var(--fgColor-danger);
+}
+
+.pridm-toggle {
+  display: inline-flex;
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pridm-toggle button {
+  font: inherit;
+  font-family: var(--fontStack-sansSerif);
+  font-size: 12px;
+  padding: 2px 8px;
+  border: 0;
+  background: var(--bgColor-default);
+  color: var(--fgColor-default);
+  cursor: pointer;
+}
+
+.pridm-toggle button[aria-pressed='true'] {
+  background: var(--bgColor-accent-emphasis);
+  color: var(--fgColor-onEmphasis);
+}
+
+.pridm-file-note {
+  padding: 16px;
+  color: var(--fgColor-muted);
+  font-style: italic;
+}
+
+/* ─── Markdown diff ───────────────────────────────────────── */
+
+.pridm-md {
+  padding: 4px 16px;
+  color: var(--fgColor-default);
+  font-family: var(--fontStack-sansSerif);
+}
+
+/* ==inserted== renders as <mark> */
+.pridm-md mark {
+  background: var(--diffBlob-additionWord-bgColor);
+  color: var(--diffBlob-additionWord-fgColor);
+  border-radius: 2px;
+}
+
+/* ~~deleted~~ gets MDXEditor's hashed strikethrough class */
+.pridm-md [class*='_strikethrough_'] {
+  background: var(--diffBlob-deletionWord-bgColor);
+  color: var(--diffBlob-deletionWord-fgColor);
+  text-decoration: line-through;
+  border-radius: 2px;
+}
+
+.pridm-md pre {
+  background: var(--bgColor-muted);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: var(--fontStack-monospace);
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+.pridm-md table {
+  border-collapse: collapse;
+}
+
+.pridm-md th,
+.pridm-md td {
+  border: 1px solid var(--borderColor-default);
+  padding: 4px 10px;
+}
+
+.pridm-md a {
+  color: var(--fgColor-accent);
+}
