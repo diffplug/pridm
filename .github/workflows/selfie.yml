@@ -1,0 +1,24 @@
+# Renders every story of every pushed commit, and uploads the batch to hackathon.selfie.dev,
+# which gives the commit a `selfie` status. See specs/ui/storybook.md -> Selfie.
+name: Selfie
+on:
+  push:
+    branches: ["**"]
+jobs:
+  selfie:
+    # arm64, so the images match Selfie's pinned environment.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # What a commit reaches is what its approvals come from, so this needs all of its history.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      # Pinned to the commit the server at hackathon.selfie.dev was deployed from.
+      - uses: diffplug/selfie-hackathon/.github/actions/selfie@33fdf999b97004773b800054eae5ba8213f3a08b
+        with:
+          upload-token: ${{ secrets.SELFIE_UPLOAD_TOKEN }}
