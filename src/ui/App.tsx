@@ -31,9 +31,18 @@ function DashboardPage() {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   });
-  if (summaries.state === 'loading') return <p className="pridm-muted">Looking through your checkouts…</p>;
+  if (summaries.state === 'loading') return <p className="pridm-muted">Looking through your checkouts and PRs…</p>;
   if (summaries.state === 'error') return <p className="pridm-attention">Couldn't load deltas: {summaries.error}</p>;
-  return <Dashboard summaries={summaries.value} />;
+  return (
+    <>
+      {summaries.value.warnings.map((w) => (
+        <p key={w} className="pridm-warning">
+          {w}
+        </p>
+      ))}
+      <Dashboard summaries={summaries.value.deltas} />
+    </>
+  );
 }
 
 function DeltaPage({ id, open, setOpen }: { id: DeltaId; open: Category[]; setOpen: (open: Category[]) => void }) {

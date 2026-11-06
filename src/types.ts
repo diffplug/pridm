@@ -105,6 +105,14 @@ interface DeltaSummary {
   delta: BulkDelta;
   focus: Focus;
   categories: CategoryStat[];
+  unavailable?: string;      // why this delta can't be opened, e.g. its repo isn't cloned
+}
+
+// GET /api/deltas. Warnings are problems that didn't stop the listing,
+// e.g. `gh` isn't logged in, so only local checkouts are shown.
+interface DeltaList {
+  deltas: DeltaSummary[];
+  warnings: string[];
 }
 
 interface DeltaOverview {
@@ -192,7 +200,7 @@ export {
   DEFAULT_CATEGORIES,
   OTHER,
   type BulkDelta, type DeltaId, type RepoKey, type LocalCheckout, type PullRequest,
-  type SurfaceRef, type Category, type Focus, type CategoryStat, type WordCounts, type DeltaSummary,
+  type SurfaceRef, type Category, type Focus, type CategoryStat, type WordCounts, type DeltaSummary, type DeltaList,
   type DeltaOverview, type CategoryDiff, type FileStatus, type FileStat, type FileChange,
   type CodeDiff, type MarkdownDiff, type CategoryGlobs, type CategoryConfig, type PridmState,
 };

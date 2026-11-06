@@ -30,3 +30,9 @@ priδm runs inside Dormouse and shows which Dormouse panes (agents, dev servers,
 - [Stack](specs/stack.md): libraries, project layout, pitfalls
 
 The types everything is built on are in [`src/types.ts`](src/types.ts).
+
+## Credits
+
+Thanks to [imbue](https://imbue.com/) for hosting the [Punk Software Hack Night](https://luma.com/Punk1 "Punk Software Hack Night")!
+
+This was built by [nedshed.dev](https://nedshed.dev/) using [dormouse.sh](https://dormouse.sh/ "Dormouse.sh") as the terminal / agent manager and [selfie.dev](https://selfie.dev/) for snapshot diffing / feedback.

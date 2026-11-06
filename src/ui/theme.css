@@ -336,6 +336,18 @@ body {
   text-decoration: underline;
 }
 
+.pridm-row[data-unavailable] .pridm-row-title {
+  font-weight: 400;
+  color: var(--fgColor-muted);
+}
+
+.pridm-warning {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--bgColor-attention-muted);
+  color: var(--fgColor-attention);
+}
+
 .pridm-row[data-focus='muted'] {
   opacity: 0.55;
 }
