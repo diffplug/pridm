@@ -11,7 +11,7 @@ import { git } from '../src/server/exec.ts';
 
 const cwd = new URL('..', import.meta.url).pathname;
 const base = 'a76a1ce';  // "Sketch Prism's data model and README"
-const head = git(cwd, ['rev-parse', 'HEAD']).trim();
+const head = (await git(cwd, ['rev-parse', 'HEAD'])).trim();
 const range: Range = { cwd, base, head };
 
 const globs = DEFAULT_CATEGORIES['*'];
@@ -25,23 +25,26 @@ const customGlobs: CategoryGlobs = {
   other: ['bun.lock'],
 };
 
-const files = fileStats(range, globs)
-  // Leave out the fixtures themselves: a fixture that contains itself never settles.
-  .filter((f) => !f.path.startsWith('src/ui/fixtures/real/'))
-  .map((stat) => fileChange(range, stat));
+const files = await Promise.all(
+  (await fileStats(range, globs))
+    // Leave out the fixtures themselves: a fixture that contains itself never settles.
+    .filter((f) => !f.path.startsWith('src/ui/fixtures/real/'))
+    .map((stat) => fileChange(range, stat)),
+);
 
 const custom = classifier(customGlobs);
 const delta: BulkDelta = {
   id: 'github.com/diffplug/pridm:main',
   repo: 'github.com/diffplug/pridm',
   branch: 'main',
-  base: { ref: base, sha: git(cwd, ['rev-parse', base]).trim() },
+  base: { ref: base, sha: (await git(cwd, ['rev-parse', base])).trim() },
   title: 'pridm reviewing its own build',
   local: {
     path: '/Users/ntwigg/projects/pridm',
     headSha: head,
     uncommitted: { staged: 0, unstaged: 0, untracked: 0 },
     upstream: { ref: 'origin/main', ahead: 0, behind: 0 },
+    updatedAt: (await git(cwd, ['log', '-1', '--format=%cI', head])).trim(),
   },
   pr: null,
   surfaces: [],

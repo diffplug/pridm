@@ -2,20 +2,25 @@
 
 pridm builds its list of deltas from two sources and joins them on `id`, then attaches Dormouse surfaces.
 
-## 1. Local worktrees
+## 1. Local checkouts
 
-For each clone found under `scanRoots` (e.g. `~/projects`):
+Built in `src/server/discover.ts`. Every scan root (default `~/projects`), and every folder directly inside one, that holds a `.git` is a checkout: a `.git` directory for a clone, a `.git` file for a worktree. For each one:
 
-1. `git remote get-url origin` gives the origin, which is normalized into the `RepoKey`.
-2. `git worktree list --porcelain` gives each worktree's path, head commit, and branch.
-3. The base is the merge-base of `HEAD` and `origin/<default branch>`. The default branch comes from `git symbolic-ref refs/remotes/origin/HEAD`, falling back to `main`, then `master`.
-4. Worktrees with no changes compared with their base are skipped, so a clean `main` checkout doesn't show up.
+1. `git remote get-url origin` gives the origin, which is normalized into the `RepoKey` (`src/server/origin.ts`). With no origin, it's `file:<main clone>`.
+2. `git symbolic-ref HEAD` gives the branch; detached HEAD has none.
+3. The base is the merge-base of `HEAD` and the default branch: `origin/HEAD` if it's set, else `origin/main`, `origin/master`, `main`, `master`.
+4. Checkouts with no changes compared with their base are skipped, so a clean `main` doesn't show up.
+5. The title is the last commit's subject if the branch has commits past its base, else the branch name.
 
-## 2. Your open PRs
+Worktrees that live outside the scan roots aren't found. That's simpler than following `git worktree list` from each clone, and it matches how worktrees are laid out in `~/projects`.
+
+Git runs in parallel, at most 16 processes at once (`src/server/exec.ts`). Scanning 69 folders in `~/projects` finds 20 deltas in about 2 seconds.
+
+## 2. Your open PRs (not built yet)
 
 `gh search prs` can't return branch names, and we need those to build ids. So use one GraphQL query through `gh api graphql`, searching `is:pr is:open author:@me`. For each PR it returns: number, title, url, author, draft or not, updatedAt, `headRefName`, `headRefOid`, `baseRefName`, `baseRefOid`, and the repository.
 
-## 3. Join
+## 3. Join (not built yet)
 
 A PR and a worktree with the same `id` (`<origin>:<branch>`) become one `BulkDelta`. If the PR's base differs from the merge-base, the PR's base wins.
 
@@ -27,10 +32,11 @@ Both sources sit behind one interface: list the changed files with their +/− c
   - Changed files: `git diff --numstat -M <base>` and `git diff --name-status -M <base>`.
   - New files git doesn't track yet: `git ls-files --others --exclude-standard`, because `git diff` leaves them out.
   - Uncommitted files: anything not in `git diff --name-only <base> HEAD`.
+  - Markdown word counts: one `git diff --word-diff=porcelain --word-diff-regex=[^[:space:]]+` per checkout, limited to `*.md` and `*.mdx`, instead of reading both versions of every markdown file.
   - Contents: `git show <base>:<old path>` for the old version; the file on disk (local) or `git show <head>:<path>` (PR) for the new one.
 - **GitHub API** handles PRs with no local clone: `gh api repos/<o>/<r>/pulls/<n>/files` for the file list, and the contents endpoint with the raw media type for the contents. This is the first thing to cut if we're short on time.
 
-## 5. Dormouse surfaces
+## 5. Dormouse surfaces (not built yet)
 
 pridm runs inside Dormouse. `dor list --json --all` lists every surface in the window, each with `id`, `kind`, `title`, `command`, `cwd`, `url`, `activity`, `ringing`, `todo`, and `workspace_id`.
 

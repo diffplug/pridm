@@ -8,6 +8,17 @@ One real worktree opens in pridm. Its changes are split into collapsed categorie
 
 Everything below serves that demo. The order puts the riskiest part (markdown diff rendering) first, and keeps a working demo possible at the end of each phase.
 
+## Status
+
+| Phase | Status |
+| --- | --- |
+| 0. Set up the project | done |
+| 1. Diff viewers | done |
+| 2. Delta view | done |
+| 3. Server | local checkouts done; PRs and Dormouse surfaces not yet |
+| 4. Wire it up | done for local checkouts |
+| 5. Polish | not started |
+
 ## Phases
 
 | # | Phase | Time | Ends with |

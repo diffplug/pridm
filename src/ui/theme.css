@@ -298,3 +298,67 @@ body {
   font-family: var(--fontStack-sansSerif);
   font-weight: 600;
 }
+
+/* ─── App and dashboard ───────────────────────────────────── */
+
+.pridm-app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 24px 64px;
+}
+
+.pridm-nav {
+  margin-bottom: 16px;
+}
+
+.pridm-logo {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fgColor-default);
+  text-decoration: none;
+}
+
+.pridm-dashboard {
+  display: flex;
+  flex-direction: column;
+}
+
+.pridm-row {
+  display: block;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borderColor-muted);
+  color: inherit;
+  text-decoration: none;
+}
+
+.pridm-row:hover .pridm-row-title {
+  color: var(--fgColor-accent);
+  text-decoration: underline;
+}
+
+.pridm-row[data-focus='muted'] {
+  opacity: 0.55;
+}
+
+.pridm-row-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pridm-row-facts {
+  color: var(--fgColor-muted);
+  font-size: 12px;
+}
+
+.pridm-row-facts code {
+  font-family: var(--fontStack-monospace);
+  font-size: 11px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--bgColor-accent-muted);
+  color: var(--fgColor-accent);
+}
+
+.pridm-row-counts {
+  margin-top: 2px;
+}
