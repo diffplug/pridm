@@ -31,6 +31,8 @@ An agent's loop, after changing a component:
 2. Look at the diff images. A change nobody asked for is a bug to fix, not to approve.
 3. Leave approving to a person, in `bun run selfie ui`, unless they've said to approve.
 
+In CI, `.github/workflows/selfie.yml` renders every pushed commit and uploads its batch to [hackathon.selfie.dev](https://hackathon.selfie.dev/diffplug/pridm), which gives the commit a `selfie` status: green if every story matches what's approved, yellow if a change is waiting for approval, and red if a story failed or a change was rejected. Approve there, then `SELFIE_REMOTE=https://hackathon.selfie.dev bun run selfie pull` to bring the approvals here.
+
 A person's loop is the same in `bun run selfie ui`, which renders when asked. Notes written there on an image reach an agent through `bun run selfie agent-await-feedback`.
 
 Every story must render the same image every time. If a review shows a change with no change to the code, or `bun run selfie flakes --build --times 5` lists anything, follow `bun run selfie skill fix-flakes`. Anything Monaco draws is marked `data-diff-pending` until it's done, and each story file's `play: waitForDiffs` waits for that, since Selfie screenshots once a story's play function finishes.
