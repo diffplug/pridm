@@ -15,6 +15,7 @@ import { gfmTable } from 'micromark-extension-gfm-table';
 import { gfmTableFromMarkdown } from 'mdast-util-gfm-table';
 import { diffArrays } from 'diff';
 import type { RootContent } from 'mdast';
+import type { MarkdownPiece } from '../types.ts';
 
 const DEL = '~~';
 const INS = '==';
@@ -38,6 +39,13 @@ interface Block {
 }
 
 export function mergeMarkdown(original: string, modified: string): string {
+  return joinPieces(mergePieces(original, modified));
+}
+
+// The merged document as a list of blocks, each marked whether it changed, so
+// the UI can hide runs of unchanged blocks and join any contiguous part of
+// the list back into markdown with joinPieces.
+export function mergePieces(original: string, modified: string): MarkdownPiece[] {
   const a = splitBlocks(original);
   const b = splitBlocks(modified);
   const changes = diffArrays(a, b, {
@@ -48,7 +56,7 @@ export function mergeMarkdown(original: string, modified: string): string {
   for (let i = 0; i < changes.length; i++) {
     const c = changes[i]!;
     if (!c.added && !c.removed) {
-      for (const block of c.value) out.push(piece(block, safe(block)));
+      for (const block of c.value) out.push(piece(block, safe(block), false));
       continue;
     }
     // A run of removed blocks next to a run of added ones: pair them up.
@@ -62,7 +70,7 @@ export function mergeMarkdown(original: string, modified: string): string {
 
     out.push(...pairUp(removed, added));
   }
-  return join(out);
+  return out;
 }
 
 // Lines up removed and added blocks of the same type, in order. Pairs that
@@ -131,17 +139,15 @@ export function splitBlocks(markdown: string): Block[] {
 
 // ─── Emitting blocks ─────────────────────────────────────────
 
-interface Piece {
-  text: string;
-  listItem: boolean;  // list items keep their own separators so lists stay tight
-  sep: string;
+type Piece = MarkdownPiece;
+
+function piece(block: Block, text: string, changed = true): Piece {
+  return { text, listItem: block.type === 'listItem', sep: block.sep, changed };
 }
 
-function piece(block: Block, text: string): Piece {
-  return { text, listItem: block.type === 'listItem', sep: block.sep };
-}
-
-function join(pieces: Piece[]): string {
+// Joins contiguous pieces back into markdown. List items keep their own
+// separators, so lists stay tight; everything else gets a blank line.
+export function joinPieces(pieces: Piece[]): string {
   let out = '';
   pieces.forEach((p, i) => {
     if (i > 0) {
@@ -173,12 +179,12 @@ function label(mark: string, word: string, block: Block): string {
 
 function deletedBlock(block: Block): Piece {
   if (isText(block)) return piece(block, markBlock(block.source, DEL));
-  return { text: label(DEL, 'Removed', block) + '\n\n' + safe(block), listItem: false, sep: block.sep };
+  return { text: label(DEL, 'Removed', block) + '\n\n' + safe(block), listItem: false, sep: block.sep, changed: true };
 }
 
 function insertedBlock(block: Block): Piece {
   if (isText(block)) return piece(block, markBlock(block.source, INS));
-  return { text: label(INS, 'Added', block) + '\n\n' + safe(block), listItem: false, sep: block.sep };
+  return { text: label(INS, 'Added', block) + '\n\n' + safe(block), listItem: false, sep: block.sep, changed: true };
 }
 
 // Two versions of the same type of block, shown as one piece; or null when
@@ -186,7 +192,7 @@ function insertedBlock(block: Block): Piece {
 function modifiedBlock(old: Block, neu: Block): Piece | null {
   if (!isText(neu)) {
     const text = [label(DEL, 'Old', neu), safe(old), label(INS, 'New', neu), safe(neu)].join('\n\n');
-    return { text, listItem: false, sep: neu.sep };
+    return { text, listItem: false, sep: neu.sep, changed: true };
   }
   const merged = mergeTextBlock(old.source, neu.source, neu.type);
   return merged === null ? null : piece(neu, merged);

@@ -210,12 +210,6 @@ body {
   font-weight: 600;
 }
 
-.pridm-delta-total {
-  font-size: 14px;
-  font-weight: 400;
-  font-family: var(--fontStack-monospace);
-}
-
 .pridm-facts {
   color: var(--fgColor-muted);
   margin-bottom: 16px;
@@ -445,4 +439,171 @@ body {
 
 .pridm-delta-title h2 {
   flex: 1;
+}
+
+/* ─── Whole added and deleted files (CodeDiffView) ────────── */
+
+.pridm-whole-added {
+  background: var(--diffBlob-additionLine-bgColor);
+}
+
+.pridm-whole-added-margin {
+  background: var(--diffBlob-additionNum-bgColor);
+}
+
+.pridm-whole-deleted {
+  background: var(--diffBlob-deletionLine-bgColor);
+}
+
+.pridm-whole-deleted-margin {
+  background: var(--diffBlob-deletionNum-bgColor);
+}
+
+/* ─── Expandos ────────────────────────────────────────────── */
+
+/* Monaco's fold bars: their top and bottom edges reveal 20 more lines, but are
+   invisible until hovered. Show them as arrows in the gutter, like GitHub's:
+   ↓ at the top extends the code above, ↑ at the bottom extends the code below. */
+.diff-hidden-lines .top,
+.diff-hidden-lines .bottom {
+  cursor: pointer !important;
+}
+
+/* Each fold bar is drawn twice: in the original editor, which in the inline
+   view is just the line-number gutter, and full width in the modified editor.
+   The arrows go in the gutter copy, nudged inside the bar so they don't sit on
+   the line numbers above and below it. */
+.editor.original .diff-hidden-lines .top.canMoveBottom::after,
+.editor.original .diff-hidden-lines .bottom.canMoveTop::after {
+  display: block;
+  text-align: center;
+  font-size: 9px;
+  line-height: 10px;
+  color: var(--fgColor-accent);
+}
+
+.editor.original .diff-hidden-lines .top.canMoveBottom::after {
+  content: '▼';
+  transform: translateY(5px);
+}
+
+.editor.original .diff-hidden-lines .bottom.canMoveTop::after {
+  content: '▲';
+  transform: translateY(-7px);
+}
+
+.diff-hidden-lines .top:hover,
+.diff-hidden-lines .bottom:hover {
+  background: var(--bgColor-accent-muted);
+}
+
+/* The same idea for markdown (ExpandBar). */
+.pridm-expand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  background: var(--bgColor-accent-muted);
+  color: var(--fgColor-muted);
+  font-size: 12px;
+}
+
+.pridm-expand button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  color: var(--fgColor-accent);
+  font: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.pridm-expand button:hover {
+  background: var(--bgColor-accent-emphasis);
+  color: var(--fgColor-onEmphasis);
+}
+
+.pridm-expand-arrows {
+  display: inline-flex;
+  flex-direction: column;
+  width: 30px;
+}
+
+.pridm-expand-arrows button {
+  justify-content: center;
+  padding: 0 8px;
+  height: 16px;
+}
+
+.pridm-expand-all {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.pridm-expand-all:hover .pridm-muted {
+  color: inherit;
+}
+
+/* ─── Dashboard toolbar ───────────────────────────────────── */
+
+.pridm-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.pridm-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--borderColor-default);
+  border-radius: 6px;
+  background: var(--bgColor-default);
+  color: var(--fgColor-default);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pridm-refresh:hover:not(:disabled) {
+  background: var(--bgColor-muted);
+}
+
+.pridm-refresh:disabled {
+  color: var(--fgColor-muted);
+  cursor: default;
+}
+
+.pridm-spin {
+  animation: pridm-spin 1s linear infinite;
+}
+
+@keyframes pridm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A markdown diff in chunks (MarkdownDiffView): MDXEditor ends a chunk that
+   ends with a heading or list with an empty paragraph. Hide it, and keep
+   chunk edges tight so the expandos sit close to the text around them. */
+.pridm-md-diff .pridm-md {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.pridm-md-diff .pridm-md > p:last-child:not(:has(:not(br))) {
+  display: none;
+}
+
+.pridm-md-diff .pridm-md > :first-child {
+  margin-top: 8px;
+}
+
+.pridm-md-diff .pridm-md > :nth-last-child(1 of :not(p:not(:has(:not(br))))) {
+  margin-bottom: 8px;
 }

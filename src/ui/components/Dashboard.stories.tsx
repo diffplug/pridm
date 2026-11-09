@@ -11,8 +11,10 @@ const meta: Meta<typeof Dashboard> = {
 export default meta;
 type Story = StoryObj<typeof Dashboard>;
 
-export const Several: Story = { args: { summaries, onFocus: () => {} } };
+export const Several: Story = { args: { summaries, onFocus: () => {}, onRefresh: () => {} } };
+export const Refreshing: Story = { args: { summaries, onFocus: () => {}, onRefresh: () => {}, refreshing: true } };
 export const Empty: Story = { args: { summaries: [] } };
 
 export const SeveralDark = dark(Several);
+export const RefreshingDark = dark(Refreshing);
 export const EmptyDark = dark(Empty);
