@@ -1,14 +1,17 @@
 // Hash routing:
 //   #/                                the dashboard
+//   #/project/<repo>                  the dashboard, with only that project's deltas
 //   #/delta/<id>?open=spec,test       one delta, with those categories open
 // Keeping open categories in the URL means a reload or a shared link keeps them.
 
 import { useEffect, useState } from 'react';
-import type { Category, DeltaId } from '../types.ts';
+import type { Category, DeltaId, RepoKey } from '../types.ts';
 
-export type Route = { page: 'dashboard' } | { page: 'delta'; id: DeltaId; open: Category[] };
+export type Route = { page: 'dashboard'; repo?: RepoKey } | { page: 'delta'; id: DeltaId; open: Category[] };
 
 export function parseRoute(hash: string): Route {
+  const project = /^#\/project\/([^?]+)/.exec(hash);
+  if (project) return { page: 'dashboard', repo: decodeURIComponent(project[1]!) };
   const m = /^#\/delta\/([^?]+)(?:\?(.*))?$/.exec(hash);
   if (!m) return { page: 'dashboard' };
   const open = new URLSearchParams(m[2] ?? '').get('open');
@@ -16,7 +19,7 @@ export function parseRoute(hash: string): Route {
 }
 
 export function routeHash(route: Route): string {
-  if (route.page === 'dashboard') return '#/';
+  if (route.page === 'dashboard') return route.repo ? `#/project/${encodeURIComponent(route.repo)}` : '#/';
   const open = route.open.length ? `?open=${route.open.map(encodeURIComponent).join(',')}` : '';
   return `#/delta/${encodeURIComponent(route.id)}${open}`;
 }

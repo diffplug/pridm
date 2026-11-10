@@ -34,7 +34,7 @@ We show that document in a read-only MDXEditor in rich-text mode, and CSS colors
 
 Marking blocks one at a time keeps the marks from breaking markdown syntax, e.g. by ending up in the middle of a table row.
 
-Within a block, words are whitespace-separated chunks, so every mark starts and ends next to whitespace, which keeps it valid markdown (`~~ word~~` would not be). A changed region grows into its neighbors until it's balanced on both sides, so a mark never splits `**bold**`, `` `code` ``, or `[link](url)`: changing a link's URL marks the whole link. If more than half the words changed, the block is shown as deleted + inserted instead.
+Within a block, words are whitespace-separated chunks, with runs of `*` as chunks of their own, so every mark starts and ends next to whitespace or a `*` run, which keeps it valid markdown (`~~ word~~` would not be). A word changed inside `**bold text**` is marked inside the bold, not by taking all of it. A changed region grows into its neighbors until it's balanced on both sides, so a mark never holds half of `**bold**`, `` `code` ``, or `[link](url)`: making a word bold marks the whole word, and changing a link's URL marks the whole link. If more than half the words changed, the block is shown as deleted + inserted instead.
 
 This lives in `src/shared/mdmerge.ts`. It's a pure function, so it has unit tests, and Storybook can call it on fixtures directly.
 

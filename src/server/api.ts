@@ -73,9 +73,9 @@ async function deltas(): Promise<DeltaList> {
 async function fresh(id: DeltaId): Promise<LocalDelta> {
   if (!readers.has(id)) await deltas();
   const read = readers.get(id);
-  if (!read) throw new HttpError(404, `No delta ${id}`);
+  if (!read) throw new HttpError(404, `It isn't in your checkouts or open PRs any more. Maybe it was merged, or its checkout moved to another branch.`);
   const d = await read();
-  if (d === null) throw new HttpError(404, `${id} has no changes any more`);
+  if (d === null) throw new HttpError(404, `It has no changes any more. Maybe it was merged.`);
   if (typeof d === 'string') throw new HttpError(503, d);
   return d;
 }

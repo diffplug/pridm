@@ -57,9 +57,9 @@ describe('mergeMarkdown', () => {
     expect(merge('Text.', 'Text.\n\n```\nnew\n```')).toBe('Text.\n\n==**Added code block**==\n\n```\nnew\n```');
   });
 
-  test('a mark never splits bold text', () => {
+  test('a word changed inside bold text is marked inside the bold', () => {
     expect(merge('This is **very important** stuff.', 'This is **really important** stuff.')).toBe(
-      'This is ~~**very important**~~ ==**really important**== stuff.',
+      'This is **~~very~~ ==really== important** stuff.',
     );
   });
 
@@ -104,5 +104,25 @@ describe('mergeMarkdown', () => {
 
   test('raw HTML is shown as an html code block', () => {
     expect(merge('<div>hi</div>', '<div>hi</div>')).toBe('```html\n<div>hi</div>\n```');
+  });
+});
+
+describe('bold text', () => {
+  test('a change at the end of a bold phrase is marked inside the bold', () => {
+    const old = '**Must answer with an error, and keep serving the connection** (`a.test.js`).\n';
+    const neu = '**Must answer with an error, and keep serving later connections** (`a.test.js`).\n';
+    expect(mergeMarkdown(old, neu)).toBe('**Must answer with an error, and keep serving ~~the connection~~ ==later connections==** (`a.test.js`).\n');
+  });
+
+  test('a change at the start of a bold phrase', () => {
+    expect(mergeMarkdown('**Must answer every request** today.\n', '**Should answer every request** today.\n')).toBe(
+      '**~~Must~~ ==Should== answer every request** today.\n',
+    );
+  });
+
+  test('making a word bold takes the whole word', () => {
+    expect(mergeMarkdown('one plain word in a sentence\n', 'one **plain** word in a sentence\n')).toBe(
+      'one ~~plain~~ ==**plain**== word in a sentence\n',
+    );
   });
 });

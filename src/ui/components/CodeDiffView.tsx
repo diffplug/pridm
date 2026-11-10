@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DiffEditor, Editor, useMonaco, type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
+import { structuredPatch } from 'diff';
 import '../monaco.ts';
 import type { CodeDiff } from '../../types.ts';
 import { defineMonacoTheme, monacoThemeName, useIsDark } from '../theme.ts';
@@ -11,6 +12,10 @@ const MIN_HEIGHT = 3 * LINE_HEIGHT;
 // Monaco's DiffEditor, shown inline with unchanged regions folded. A change
 // within a single line stays on one line, instead of a deleted line + an added one.
 // It mounts only once it scrolls near the screen, and sizes itself to its content.
+//
+// Monaco first lays out the whole file, and folds the unchanged regions only once the diff comes
+// back from its worker. Until then the editor is hidden, in a box the height the folded diff is
+// expected to be, so the full file never flashes by.
 //
 // It's marked `data-diff-pending` until it has measured whether it's near the screen, and, if it is,
 // until the diff is drawn with its syntax colors. Stories wait for that before a screenshot.
@@ -90,7 +95,7 @@ function DiffView({ diff }: { diff: CodeDiff }) {
   const [ref, near] = useNearScreen<HTMLDivElement>();
   const tokenizerReady = useTokenizer(monaco, diff.language);
   const [drawn, setDrawn] = useState(false);
-  const [height, setHeight] = useState(() => estimateHeight(diff));
+  const [height, setHeight] = useState(() => estimateFoldedHeight(diff));
 
   // Re-read Primer's colors whenever light/dark changes.
   useEffect(() => {
@@ -99,22 +104,30 @@ function DiffView({ diff }: { diff: CodeDiff }) {
 
   const onMount = (ed: editor.IStandaloneDiffEditor) => {
     const modified = ed.getModifiedEditor();
-    const resize = () => setHeight(Math.max(MIN_HEIGHT, modified.getContentHeight()));
+    // The content's height means nothing until the unchanged regions are folded.
+    let folded = false;
+    const resize = () => folded && setHeight(Math.max(MIN_HEIGHT, modified.getContentHeight()));
     modified.onDidContentSizeChange(resize);
-    resize();
+    // The folds are applied just after the diff arrives, so wait a frame before showing it.
+    const show = () =>
+      requestAnimationFrame(() => {
+        folded = true;
+        resize();
+        setDrawn(true);
+      });
     markInlineChanges(ed);
     // Color every line now, before the diff comes back from its worker. Otherwise the deleted lines,
     // which come from the hidden original editor, can paint before they're colored.
     for (const model of [ed.getOriginalEditor().getModel(), modified.getModel()]) {
       if (model) forceTokenization(model);
     }
-    ed.onDidUpdateDiff(() => setDrawn(true));
-    if (ed.getLineChanges() !== null) setDrawn(true);
+    ed.onDidUpdateDiff(show);
+    if (ed.getLineChanges() !== null) show();
   };
 
   const pending = near === null || (near && !drawn);
   return (
-    <div ref={ref} style={{ height }} data-diff-pending={pending || undefined}>
+    <div ref={ref} style={{ height, overflow: 'hidden', visibility: drawn ? undefined : 'hidden' }} data-diff-pending={pending || undefined}>
       {near && tokenizerReady && (
         <DiffEditor
           original={diff.original}
@@ -182,6 +195,16 @@ function lineRange(line: number) {
 function estimateHeight(diff: CodeDiff): number {
   const lines = Math.max(diff.original.split('\n').length, diff.modified.split('\n').length);
   return Math.max(MIN_HEIGHT, Math.min(lines, 30) * LINE_HEIGHT);
+}
+
+// A guess at a diff's height once its unchanged regions are folded: the changed lines, 3 lines of
+// context around each run of them, and a fold bar between runs. Close enough that showing the real
+// diff barely moves the page.
+function estimateFoldedHeight(diff: CodeDiff): number {
+  const FOLD_BAR = 24;
+  const { hunks } = structuredPatch('', '', diff.original, diff.modified, '', '', { context: 3 });
+  const lines = hunks.reduce((n, h) => n + h.lines.filter((l) => !l.startsWith('\\')).length, 0);
+  return Math.max(MIN_HEIGHT, lines * LINE_HEIGHT + (hunks.length + 1) * FOLD_BAR);
 }
 
 // Null until first measured, then true once the element comes within a screen's height of the viewport. Stays true.

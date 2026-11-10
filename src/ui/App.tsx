@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react';
-import type { Category, CategoryDiff, DeltaId, Focus } from '../types.ts';
-import { api, useLoad } from './api.ts';
+import type { Category, CategoryDiff, DeltaId, DeltaList, DeltaOverview, Focus, RepoKey } from '../types.ts';
+import { api, patchCached, useLoad } from './api.ts';
 import { routeHash, useRoute } from './route.ts';
 import { Dashboard } from './components/Dashboard.tsx';
 import { DeltaView } from './components/DeltaView.tsx';
+import { Nav, RefreshButton, repoName } from './components/Nav.tsx';
 
 export function App() {
   const [route, navigate] = useRoute();
   return (
     <main className="pridm-app">
-      <nav className="pridm-nav">
-        <a href={routeHash({ page: 'dashboard' })} className="pridm-logo">
-          priδm
-        </a>
-      </nav>
       {route.page === 'dashboard' ? (
-        <DashboardPage />
+        <DashboardPage repo={route.repo} />
       ) : (
         <DeltaPage id={route.id} open={route.open} setOpen={(open) => navigate({ ...route, open }, true)} />
       )}
@@ -31,16 +27,28 @@ function useFocus(): [Record<DeltaId, Focus>, (id: DeltaId, focus: Focus) => voi
   const change = (id: DeltaId, focus: Focus) => {
     setOverrides((o) => ({ ...o, [id]: focus }));
     setError(null);
-    api.setFocus(id, focus).catch((e: Error) => {
-      setOverrides(({ [id]: _, ...rest }) => rest);
-      setError(`Couldn't save: ${e.message}`);
-    });
+    api.setFocus(id, focus).then(
+      () => {
+        // Keep the cached pages in step, so they don't show the old setting on the next visit.
+        patchCached<DeltaList>(DELTAS, (list) => ({ ...list, deltas: list.deltas.map((s) => (s.delta.id === id ? { ...s, focus } : s)) }));
+        patchCached<DeltaOverview>(id, (o) => ({ ...o, focus }));
+      },
+      (e: Error) => {
+        setOverrides(({ [id]: _, ...rest }) => rest);
+        setError(`Couldn't save: ${e.message}`);
+      },
+    );
   };
   return [overrides, change, error];
 }
 
-function DashboardPage() {
-  const [summaries, reload, busy] = useLoad('deltas', api.deltas);
+// The cache key of the dashboard's list. No delta id can equal it: they all contain ':' or '@'.
+const DELTAS = 'deltas';
+
+// With `repo`, only that project's deltas.
+function DashboardPage({ repo }: { repo?: RepoKey }) {
+  // Kept across page reloads: the listing is the slow load, and it's refreshed behind anyway.
+  const [summaries, reload, busy] = useLoad(DELTAS, api.deltas, { persist: true });
   const [focus, setFocus, focusError] = useFocus();
   // Refresh when you come back to the tab, so it reflects work done elsewhere.
   useEffect(() => {
@@ -48,21 +56,45 @@ function DashboardPage() {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   });
-  if (summaries.state === 'loading') return <p className="pridm-muted">Looking through your checkouts and PRs…</p>;
-  if (summaries.state === 'error') return <p className="pridm-attention">Couldn't load deltas: {summaries.error}</p>;
+  const crumbs = repo ? [{ label: repoName(repo) }] : [];
+  if (summaries.state === 'loading')
+    return (
+      <>
+        <Nav crumbs={crumbs} />
+        <p className="pridm-muted">Looking through your checkouts and PRs…</p>
+      </>
+    );
+  if (summaries.state === 'error')
+    return (
+      <>
+        <Nav crumbs={crumbs}>
+          <RefreshButton onRefresh={reload} refreshing={busy} />
+        </Nav>
+        <p className="pridm-attention">Couldn't load deltas: {summaries.error}</p>
+      </>
+    );
+  const shown = summaries.value.deltas.filter((s) => !repo || s.delta.repo === repo);
+  const count = shown.length;
   return (
     <>
+      <Nav crumbs={crumbs}>
+        <span className="pridm-muted">
+          {count} {count === 1 ? 'delta' : 'deltas'}
+        </span>
+        <RefreshButton onRefresh={reload} refreshing={busy} />
+      </Nav>
       {[...summaries.value.warnings, ...(focusError ? [focusError] : [])].map((w) => (
         <p key={w} className="pridm-warning">
           {w}
         </p>
       ))}
-      <Dashboard
-        summaries={summaries.value.deltas.map((s) => ({ ...s, focus: focus[s.delta.id] ?? s.focus }))}
-        onFocus={setFocus}
-        onRefresh={reload}
-        refreshing={busy}
-      />
+      {repo && count === 0 ? (
+        <p className="pridm-muted">
+          No changes in {repoName(repo)}. <a href={routeHash({ page: 'dashboard' })}>See every project</a>
+        </p>
+      ) : (
+        <Dashboard summaries={shown.map((s) => ({ ...s, focus: focus[s.delta.id] ?? s.focus }))} onFocus={setFocus} />
+      )}
     </>
   );
 }
@@ -84,10 +116,26 @@ function DeltaPage({ id, open, setOpen }: { id: DeltaId; open: Category[]; setOp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, open.join(',')]);
 
-  if (overview.state === 'loading') return <p className="pridm-muted">Loading…</p>;
-  if (overview.state === 'error') return <p className="pridm-attention">Couldn't load {id}: {overview.error}</p>;
+  if (overview.state === 'loading')
+    return (
+      <>
+        <Nav />
+        <p className="pridm-muted">Loading…</p>
+      </>
+    );
+  if (overview.state === 'error')
+    return (
+      <>
+        <Nav />
+        <p className="pridm-attention">
+          Couldn't load {id}: {overview.error} <a href={routeHash({ page: 'dashboard' })}>Back to the dashboard</a>
+        </p>
+      </>
+    );
+  const { delta } = overview.value;
   return (
     <>
+      <Nav crumbs={[{ label: repoName(delta.repo), href: routeHash({ page: 'dashboard', repo: delta.repo }) }, { label: delta.title }]} />
       {focusError && <p className="pridm-warning">{focusError}</p>}
       <DeltaView
         overview={{ ...overview.value, focus: focus[id] ?? overview.value.focus }}

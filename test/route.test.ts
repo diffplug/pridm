@@ -14,6 +14,12 @@ test('a delta id with slashes and colons survives the round trip', () => {
   expect(parseRoute(hash)).toEqual(route);
 });
 
+test('one project', () => {
+  const route = { page: 'dashboard' as const, repo: 'github.com/diffplug/pridm' };
+  expect(routeHash(route)).toBe('#/project/github.com%2Fdiffplug%2Fpridm');
+  expect(parseRoute(routeHash(route))).toEqual(route);
+});
+
 test('no open categories', () => {
   expect(parseRoute('#/delta/abc')).toEqual({ page: 'delta', id: 'abc', open: [] });
 });
