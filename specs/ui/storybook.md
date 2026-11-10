@@ -12,7 +12,8 @@ This works because components only take data as props, and fetching happens in a
 - **Category section:** collapsed (totals only), expanded with every file collapsed, loading, a custom category.
 - **File diff:** collapsed, expanded, loading.
 - **Expandos:** an expand bar between changes, at the top, at the bottom; a long spec folded, expanded down once, expanded all.
-- **Dashboard:** several deltas, refreshing, empty.
+- **Dashboard:** several deltas in more than one project, empty.
+- **Nav:** on the dashboard, refreshing, on one project, on a delta, bare (while loading).
 - **Code diff:** added, deleted, modified, renamed, binary, a large file.
 - **Markdown diff:** a word changed in a paragraph, a heading renamed, a list item added, a block deleted, a code block changed, a table changed.
 - **All of the above in light and dark.** The toolbar switches them by hand, and every story also has a `…Dark` twin, made with `dark()` from `src/ui/stories.ts`, since a screenshot only renders a story's own globals.

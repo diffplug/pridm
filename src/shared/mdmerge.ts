@@ -252,12 +252,15 @@ interface Token {
 
 const isSpace = (s: string) => /^\s+$/.test(s);
 
-// Word-level merge. Tokens are whitespace-separated chunks, so every mark
-// starts and ends next to whitespace, which keeps it valid markdown. A changed
-// region grows into its neighbors until its markdown is balanced on both sides,
-// so a mark never splits `**bold**`, `` `code` ``, or `[link](url)`.
+// Word-level merge. Tokens are whitespace-separated chunks, with runs of `*`
+// as tokens of their own, so a change to the last words of `**bold text**`
+// is marked inside the bold instead of taking all of it. Every mark starts
+// and ends next to whitespace or a `*` run, which keeps it valid markdown. A
+// changed region grows into its neighbors until its markdown is balanced on
+// both sides, so a mark never holds half of `**bold**`, `` `code` ``, or
+// `[link](url)`.
 export function mergeWords(old: string, neu: string): string | null {
-  const tokenize = (s: string) => s.split(/(\s+)/).filter((t) => t !== '');
+  const tokenize = (s: string) => s.split(/(\s+|\*+)/).filter((t) => t !== '');
   const tokens: Token[] = [];
   for (const c of diffArrays(tokenize(old), tokenize(neu))) {
     const op = c.added ? 'ins' : c.removed ? 'del' : 'eq';

@@ -1,10 +1,12 @@
 import type { DeltaSummary, Focus } from '../../types.ts';
 import { CategoryCounts } from './CategoryCounts.tsx';
 import { FocusButtons } from './FocusButtons.tsx';
+import { repoName } from './Nav.tsx';
 
 export interface DeltaRowProps {
   summary: DeltaSummary;
   href: string;
+  showRepo?: boolean; // false inside a project's group, which already names the repo
   onFocus?: (focus: Focus) => void;
 }
 
@@ -12,13 +14,13 @@ export interface DeltaRowProps {
 // that can't be opened here, to the PR on GitHub. The title's link is stretched
 // over the row in CSS, so the pin and mute buttons can sit on top of it
 // (buttons inside a link aren't valid HTML).
-export function DeltaRow({ summary, href, onFocus }: DeltaRowProps) {
+export function DeltaRow({ summary, href, showRepo = true, onFocus }: DeltaRowProps) {
   const { delta, categories, unavailable } = summary;
   const { local, pr } = delta;
   const uncommitted = local ? local.uncommitted.staged + local.uncommitted.unstaged + local.uncommitted.untracked : 0;
 
   const facts: React.ReactNode[] = [];
-  facts.push(<span key="repo">{delta.repo.replace(/^github\.com\//, '')}</span>);
+  if (showRepo) facts.push(<span key="repo">{repoName(delta.repo)}</span>);
   if (delta.branch && delta.branch !== delta.title) facts.push(<code key="branch">{delta.branch}</code>);
   if (pr) facts.push(<span key="pr">#{pr.number}{pr.state !== 'open' && ` ${pr.state}`}</span>);
   if (!local && !unavailable) facts.push(<span key="nolocal">not checked out</span>);

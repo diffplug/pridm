@@ -33,11 +33,13 @@ Markdown files are counted in **words**, shown as `+105w −686w`, because they'
 
 ## Dashboard
 
-The dashboard says how many deltas there are, and has a **Refresh** button, which looks through your checkouts and PRs again. It also refreshes on its own when the tab gets focus.
+A nav bar tops every page: the logo, which goes back to the dashboard, then, on a delta, its project and title, or, on one project's dashboard, the project. On the dashboard its right side says how many deltas there are, and has a **Refresh** button, which looks through your checkouts and PRs again. The dashboard also refreshes on its own when the tab gets focus.
 
-One row per delta, sorted by: pinned first, then most recently updated, then PRs that can't be opened. Muted deltas go to the bottom, dimmed. (Deltas with a surface that needs attention will come right after pinned ones, once surfaces are built.) Each row shows:
+The UI keeps the last result of everything it loads, and shows it at once when you come back, while it loads again behind; Refresh spins meanwhile. The dashboard's list is also kept in `localStorage`, so it's there after a page reload too. What's cached is only what's shown first: the server still reads git fresh on every request.
 
-- the title, branch, and PR number if there is one
+Deltas are grouped by project, under the repo's name. The name links to `#/project/<repo>`: the same dashboard with only that project's deltas, counted in the nav. A delta's project crumb goes there too. One row per delta, sorted by: pinned first, then most recently updated, then PRs that can't be opened. Muted deltas go to the bottom, dimmed. A project sits where its first delta would, so pinning a delta lifts its whole project, and a project with only muted deltas sinks. (Deltas with a surface that needs attention will come right after pinned ones, once surfaces are built.) Each row shows:
+
+- the title, branch, and PR number if there is one (not the repo, which its group names)
 - each category's +/−, e.g. `spec +120 −14 · prod +88 −31`
 - uncommitted and unpushed counts
 - the Dormouse surfaces working on it, e.g. "claude (waiting on you) · npm run dev · browser"
